@@ -1,6 +1,6 @@
 # SuperHedge
 
-Principal-protected Structured Product NFTs on Moonbeam
+Principal-protected structured product NFTs on Moonbeam
 
 ## Getting Started
 
