@@ -1,7 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
 
-require("@nomiclabs/hardhat-etherscan");
-require("hardhat-gas-reporter");
 require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -14,6 +12,23 @@ module.exports = {
         runs: 200,
       }
     },
+  },
+  networks: {
+    /* hardhat: {
+      forking: {
+        url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`
+      }
+    }, */
+    moonbase: {
+      url: 'https://rpc.api.moonbase.moonbeam.network',
+      chainId: 1287, // (hex: 0x507),
+      accounts: [process.env.PRIVATE_KEY]
+    },
+    moonbeam: {
+      url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`, // Insert your RPC URL here
+      chainId: 1284, // (hex: 0x504),
+      accounts: [process.env.PRIVATE_KEY]
+    }
   },
   gasReporter: {
     enabled: process.env.GAS_REPORT !== undefined,
