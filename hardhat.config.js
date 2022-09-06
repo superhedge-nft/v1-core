@@ -1,6 +1,7 @@
 require("@nomicfoundation/hardhat-toolbox");
 
 require("dotenv").config();
+require('@openzeppelin/hardhat-upgrades');
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -20,7 +21,7 @@ module.exports = {
       }
     }, */
     moonbase: {
-      url: 'https://rpc.api.moonbase.moonbeam.network',
+      url: `https://moonbase-alpha.blastapi.io/${process.env.BLAST_PROJECT_ID}`,
       chainId: 1287, // (hex: 0x507),
       accounts: [process.env.PRIVATE_KEY]
     },
