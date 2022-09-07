@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-contract SHProduct {
+contract ShProduct {
     address public immutable USDC;
 
     constructor(address _usdc) {
