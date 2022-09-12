@@ -6,10 +6,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract ShNFT is ERC1155Supply, Ownable {
-
     using Counters for Counters.Counter;
     Counters.Counter private tokenIds;
-    
+
     // Optional mapping for token URIs
     mapping(uint256 => string) private _tokenURIs;
 
@@ -18,10 +17,7 @@ contract ShNFT is ERC1155Supply, Ownable {
     // Contract symbol
     string public symbol;
 
-    constructor(
-        string memory _name,
-        string memory _symbol
-    ) ERC1155("") {
+    constructor(string memory _name, string memory _symbol) ERC1155("") {
         name = _name;
         symbol = _symbol;
 
@@ -44,7 +40,6 @@ contract ShNFT is ERC1155Supply, Ownable {
         uint256 _amount,
         string calldata _uri
     ) external payable {
-
         uint256 _id = tokenIds.current();
 
         _setTokenURI(_id, _uri);
@@ -61,7 +56,10 @@ contract ShNFT is ERC1155Supply, Ownable {
     /**
      * @dev Sets `tokenURI` as the tokenURI of `tokenId`.
      */
-    function _setTokenURI(uint256 tokenId, string memory tokenURI) internal virtual {
+    function _setTokenURI(uint256 tokenId, string memory tokenURI)
+        internal
+        virtual
+    {
         _tokenURIs[tokenId] = tokenURI;
         emit URI(uri(tokenId), tokenId);
     }
