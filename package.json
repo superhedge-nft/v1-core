@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "prettier": "prettier --write \"contracts/**/*.sol\"",
+    "lint": "prettier --list-different \"contracts/**/*.sol\""
   },
   "author": "",
   "license": "ISC",
@@ -12,6 +15,8 @@
     "@nomicfoundation/hardhat-toolbox": "^1.0.2",
     "@openzeppelin/contracts": "^4.7.3",
     "dotenv": "^16.0.2",
-    "hardhat": "^2.11.0"
+    "hardhat": "^2.11.0",
+    "prettier": "^2.7.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.24"
   }
 }
