@@ -14,11 +14,11 @@ module.exports = {
     },
   },
   networks: {
-    hardhat: {
+    /* hardhat: {
       forking: {
         url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`
       }
-    },
+    }, */
     moonbase: {
       url: `https://moonbase-alpha.blastapi.io/${process.env.BLAST_PROJECT_ID}`,
       chainId: 1287, // (hex: 0x507),
