@@ -39,7 +39,7 @@ contract ShNFT is ERC1155Supply, Ownable {
         address _to,
         uint256 _amount,
         string calldata _uri
-    ) external payable {
+    ) external onlyOwner {
         uint256 _id = tokenIds.current();
 
         _setTokenURI(_id, _uri);
