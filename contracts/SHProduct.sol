@@ -11,7 +11,7 @@ contract ShProduct is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     address public immutable USDC;
-    address public deribitWallet;
+    address public deribit;
 
     IShNFT public shNFT;
 
@@ -29,12 +29,12 @@ contract ShProduct is ReentrancyGuard {
 
     constructor(
         address _usdc, 
-        address _deribitWallet, 
+        address _deribit, 
         string memory _name,
         string memory _symbol
     ) {
         USDC = _usdc;
-        deribitWallet = _deribitWallet;
+        deribit = _deribit;
 
         ShNFT _shNFT = new ShNFT(_name, _symbol);
         shNFT = IShNFT(address(_shNFT));
