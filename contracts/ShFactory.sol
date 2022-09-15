@@ -2,41 +2,46 @@
 pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-// import "./ShProduct.sol";
+import "./ShProduct.sol";
 
 contract ShFactory is Ownable {
 
-    event ProductCreated(
-        address indexed _product,
-        address _underlying,
-        uint256 _coupon,
-        uint256 _strikePrice1,
-        uint256 _strikePrice2,
-        uint256 _issuanceDate,
-        uint256 _maturityDate
-    );
+    mapping(string => address) public getProduct;
+    address[] public products;
+
+    event ProductCreated(string _name, address indexed _product);
 
     function createProduct(
         string memory _name,
-        string memory _symbol,
-        address _deribit,
-        address _usdc,
-        address _underlying,
+        string memory _underlying,
+        address _qredo_derebit,
         uint256 _coupon,
         uint256 _strikePrice1,
         uint256 _strikePrice2,
         uint256 _issuanceDate,
         uint256 _maturityDate
     ) external onlyOwner {
+        require(getProduct[_name] == address(0), "Instrument already exists");
+        bytes32 salt = keccak256(abi.encodePacked(_name));
 
-        emit ProductCreated(
-            address(this), 
-            _underlying, 
-            _coupon, 
-            _strikePrice1, 
-            _strikePrice2, 
-            _issuanceDate, 
+        address productAddr = address(new ShProduct{salt:salt}(
+            _name,
+            _underlying,
+            _qredo_derebit,
+            _coupon,
+            _strikePrice1,
+            _strikePrice2,
+            _issuanceDate,
             _maturityDate
-        );
+        ));
+
+        getProduct[_name] = productAddr;
+        products.push(productAddr);
+        
+        emit ProductCreated(_name, productAddr);
+    }
+
+    function numOfProducts() external view returns (uint256) {
+        return products.length;
     }
 }
