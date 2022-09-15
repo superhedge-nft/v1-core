@@ -10,16 +10,15 @@ import "./ShNFT.sol";
 contract ShProduct is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    address public immutable USDC;
-    address public deribit;
-
+    address public constant USDC = 0x818ec0A7Fe18Ff94269904fCED6AE3DaE6d6dC0b;
+    address public qredoDeribit;
+    
     IShNFT public shNFT;
 
     event ShNFTCreated(
         address indexed _product,
         address indexed _shNFT,
-        string _name,
-        string _symbol
+        string _name
     );
 
     event Deposit(
@@ -28,18 +27,21 @@ contract ShProduct is ReentrancyGuard {
     );
 
     constructor(
-        address _usdc, 
-        address _deribit, 
         string memory _name,
-        string memory _symbol
+        string memory _underlying,
+        address _qredo_derebit,
+        uint256 _coupon,
+        uint256 _strikePrice1,
+        uint256 _strikePrice2,
+        uint256 _issuanceDate,
+        uint256 _maturityDate
     ) {
-        USDC = _usdc;
-        deribit = _deribit;
+        qredoDeribit = _qredo_derebit;
 
-        ShNFT _shNFT = new ShNFT(_name, _symbol);
+        ShNFT _shNFT = new ShNFT(_name);
         shNFT = IShNFT(address(_shNFT));
 
-        emit ShNFTCreated(address(this), address(_shNFT), _name, _symbol);
+        emit ShNFTCreated(address(this), address(_shNFT), _name);
     }
 
     /**
