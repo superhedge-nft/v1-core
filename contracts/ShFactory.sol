@@ -13,26 +13,30 @@ contract ShFactory is Ownable {
 
     function createProduct(
         string memory _name,
+        string memory _symbol,
         string memory _underlying,
         address _qredo_derebit,
         uint256 _coupon,
         uint256 _strikePrice1,
         uint256 _strikePrice2,
         uint256 _issuanceDate,
-        uint256 _maturityDate
+        uint256 _maturityDate,
+        uint256 _maxCapacity
     ) external onlyOwner {
-        require(getProduct[_name] == address(0), "Instrument already exists");
+        require(getProduct[_name] == address(0), "Product already exists");
         bytes32 salt = keccak256(abi.encodePacked(_name));
 
         address productAddr = address(new ShProduct{salt:salt}(
             _name,
+            _symbol,
             _underlying,
             _qredo_derebit,
             _coupon,
             _strikePrice1,
             _strikePrice2,
             _issuanceDate,
-            _maturityDate
+            _maturityDate,
+            _maxCapacity
         ));
 
         getProduct[_name] = productAddr;
