@@ -11,9 +11,17 @@ contract ShProduct is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     address public constant USDC = 0x818ec0A7Fe18Ff94269904fCED6AE3DaE6d6dC0b;
-    uint256 public immutable MAX_CAPACITY;
     address public qredoDeribit;
     
+    uint256 public coupon;
+    uint256 public strikePrice1;
+    uint256 public strikePrice2;
+    uint256 public issuanceDate;
+    uint256 public maturityDate;
+    uint256 public immutable MAX_CAPACITY;
+
+    string public underlying;
+
     IShNFT public shNFT;
 
     event ShNFTCreated(
@@ -30,7 +38,7 @@ contract ShProduct is ReentrancyGuard {
         string memory _name,
         string memory _symbol,
         string memory _underlying,
-        address _qredo_derebit,
+        address _qredo_deribit,
         uint256 _coupon,
         uint256 _strikePrice1,
         uint256 _strikePrice2,
@@ -38,7 +46,14 @@ contract ShProduct is ReentrancyGuard {
         uint256 _maturityDate,
         uint256 _maxCapacity
     ) {
-        qredoDeribit = _qredo_derebit;
+        underlying = _underlying;
+        qredoDeribit = _qredo_deribit;
+        coupon = _coupon;
+        strikePrice1 = _strikePrice1;
+        strikePrice2 = _strikePrice2;
+
+        issuanceDate = _issuanceDate;
+        maturityDate = _maturityDate;
         MAX_CAPACITY = _maxCapacity;
 
         bytes32 salt = keccak256(abi.encodePacked(_name, _symbol, address(this)));
