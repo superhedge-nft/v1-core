@@ -6,5 +6,13 @@ interface IShNFT {
 
     function symbol() external view returns (string memory);
 
-    function mint(address _to, uint256 _amount, string calldata _uri) external;
+    function mint(address _to, uint256 _amount, string calldata _uri) external returns (uint256);
+
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _id,
+        uint256 _amount,
+        bytes memory _data
+    ) external;
 }

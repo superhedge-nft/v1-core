@@ -43,7 +43,7 @@ contract ShNFT is ERC1155Supply, Ownable {
         address _to,
         uint256 _amount,
         string calldata _uri
-    ) external onlyOwner{
+    ) external onlyOwner returns (uint256) {
         uint256 _id = tokenIds.current();
 
         _setTokenURI(_id, _uri);
@@ -55,6 +55,7 @@ contract ShNFT is ERC1155Supply, Ownable {
         _mint(_to, _id, _amount, bytes(""));
 
         tokenIds.increment();
+        return _id;
     }
 
     /**
