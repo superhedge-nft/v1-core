@@ -2,9 +2,10 @@
 pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract ShNFT is ERC1155Supply {
+contract ShNFT is ERC1155Supply, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private tokenIds;
 
@@ -17,24 +18,12 @@ contract ShNFT is ERC1155Supply {
     // Contract symbol
     string public symbol;
 
-    // Product Contract Address
-    address public shProduct;
-
-    // Modifier to check that the caller is the product address
-
-    modifier onlyProduct() {
-        require(msg.sender == shProduct, "Not product");
-        _;
-    }
-
     constructor(
         string memory _name, 
-        string memory _symbol,
-        address _shProduct
+        string memory _symbol
     ) ERC1155("") {
         name = _name;
         symbol = _symbol;
-        shProduct = _shProduct;
 
         tokenIds.increment();
     }
@@ -54,7 +43,7 @@ contract ShNFT is ERC1155Supply {
         address _to,
         uint256 _amount,
         string calldata _uri
-    ) external onlyProduct {
+    ) external onlyOwner{
         uint256 _id = tokenIds.current();
 
         _setTokenURI(_id, _uri);
