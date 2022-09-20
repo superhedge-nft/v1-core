@@ -10,17 +10,19 @@ import "./ShNFT.sol";
 contract ShProduct is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    string public name;
+    string public underlying;
+
     address public constant USDC = 0x818ec0A7Fe18Ff94269904fCED6AE3DaE6d6dC0b;
     address public qredoDeribit;
     
+    uint256 public tokenId;
     uint256 public coupon;
     uint256 public strikePrice1;
     uint256 public strikePrice2;
     uint256 public issuanceDate;
     uint256 public maturityDate;
     uint256 public immutable MAX_CAPACITY;
-
-    string public underlying;
 
     IShNFT public shNFT;
 
@@ -36,7 +38,6 @@ contract ShProduct is ReentrancyGuard {
 
     constructor(
         string memory _name,
-        string memory _symbol,
         string memory _underlying,
         address _qredo_deribit,
         uint256 _coupon,
@@ -44,8 +45,10 @@ contract ShProduct is ReentrancyGuard {
         uint256 _strikePrice2,
         uint256 _issuanceDate,
         uint256 _maturityDate,
-        uint256 _maxCapacity
+        uint256 _maxCapacity,
+        IShNFT _shNFT
     ) {
+        name = _name;
         underlying = _underlying;
         qredoDeribit = _qredo_deribit;
         coupon = _coupon;
@@ -56,12 +59,11 @@ contract ShProduct is ReentrancyGuard {
         maturityDate = _maturityDate;
         MAX_CAPACITY = _maxCapacity;
 
-        bytes32 salt = keccak256(abi.encodePacked(_name, _symbol, address(this)));
+        shNFT = _shNFT;
+    }
 
-        ShNFT _shNFT = new ShNFT{salt : salt}(_name, _symbol, address(this));
-        shNFT = IShNFT(address(_shNFT));
-
-        emit ShNFTCreated(address(this), address(_shNFT));
+    function setTokenId(uint256 _tokenId) external {
+        tokenId = _tokenId;
     }
 
     /**
@@ -70,9 +72,12 @@ contract ShProduct is ReentrancyGuard {
      */
     function deposit(uint256 _amount) external nonReentrant  {
         require(_amount > 0, "Amount must be greater than zero");
-        require(_amount % (1000 * 1 ether) == 0, "Amount must be whole-number thousands");
+        uint256 supply = _amount % (1000 * 1 ether);
+        require(supply == 0, "Amount must be whole-number thousands");
 
-        IERC20(USDC).safeTransfer(address(this), _amount);
+        IERC20(USDC).safeTransferFrom(msg.sender, address(this), _amount);
+
+        shNFT.safeTransferFrom(address(this), msg.sender, tokenId, supply, "0x0");
 
         emit Deposit(msg.sender, _amount);
     }
