@@ -14,6 +14,12 @@ contract ShFactory is Ownable {
 
     IShNFT public shNFT;
 
+    event NFTCreated(
+        address indexed nft,
+        string name,
+        string symbol
+    );
+
     event ProductCreated(
         string name, 
         address indexed product,
@@ -29,6 +35,8 @@ contract ShFactory is Ownable {
 
         ShNFT _shNFT = new ShNFT{salt : salt}(_nftName, _nftSymbol);
         shNFT = IShNFT(address(_shNFT));
+
+        emit NFTCreated(address(_shNFT), _nftName, _nftSymbol);
     }
 
     function createProduct(

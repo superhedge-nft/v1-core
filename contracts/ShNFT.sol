@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract ShNFT is ERC1155Supply, Ownable {
+contract ShNFT is ERC1155, ERC1155Holder, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private tokenIds;
 
     // Optional mapping for token URIs
     mapping(uint256 => string) private _tokenURIs;
 
+    mapping(uint256 => address) public creators;
+    mapping(uint256 => uint256) public tokenSupply;
     // Contract name
     string public name;
 
@@ -24,12 +27,10 @@ contract ShNFT is ERC1155Supply, Ownable {
     ) ERC1155("") {
         name = _name;
         symbol = _symbol;
-
-        tokenIds.increment();
     }
 
     function uri(uint256 _id) public view override returns (string memory) {
-        require(exists(_id), "ERC1155#uri: NONEXISTENT_TOKEN");
+        require(_exists(_id), "ERC1155#uri: NONEXISTENT_TOKEN");
         return _tokenURIs[_id];
     }
 
@@ -43,8 +44,11 @@ contract ShNFT is ERC1155Supply, Ownable {
         address _to,
         uint256 _amount,
         string calldata _uri
-    ) external onlyOwner returns (uint256) {
+    ) external onlyOwner {
+        tokenIds.increment();
+
         uint256 _id = tokenIds.current();
+        creators[_id] = msg.sender;
 
         _setTokenURI(_id, _uri);
 
@@ -53,9 +57,7 @@ contract ShNFT is ERC1155Supply, Ownable {
         }
 
         _mint(_to, _id, _amount, bytes(""));
-
-        tokenIds.increment();
-        return _id;
+        tokenSupply[_id] = _amount;
     }
 
     /**
@@ -67,5 +69,39 @@ contract ShNFT is ERC1155Supply, Ownable {
     {
         _tokenURIs[tokenId] = tokenURI;
         emit URI(uri(tokenId), tokenId);
+    }
+
+    function getCurrentTokenID() public view returns (uint256) {
+        return tokenIds.current();
+    }
+
+    /**
+     * @dev Returns whether the specified token exists by checking to see if it has a creator
+     * @param _id uint256 ID of the token to query the existence of
+     * @return bool whether the token exists
+     */
+    function _exists(uint256 _id) public view returns (bool) {
+        return creators[_id] != address(0);
+    }
+
+    /**
+     * @dev Returns the total quantity for a token ID
+     * @param _id uint256 ID of the token to query
+     * @return amount of token in existence
+     */
+    function totalSupply(uint256 _id) public view returns (uint256) {
+        return tokenSupply[_id];
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(
+            ERC1155,
+            ERC1155Receiver
+        )
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 }
