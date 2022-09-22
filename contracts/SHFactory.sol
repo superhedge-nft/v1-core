@@ -53,7 +53,7 @@ contract SHFactory is Ownable {
     ) external onlyOwner {
         require(getProduct[_name] == address(0), "Product already exists");
         bytes32 salt = keccak256(abi.encodePacked(_name));
-
+        // create new product contract
         address productAddr = address(new SHProduct{salt:salt}(
             _name,
             _underlying,
@@ -70,9 +70,11 @@ contract SHFactory is Ownable {
         getProduct[_name] = productAddr;
         products.push(productAddr);
         
-        uint256 maxSupply = _maxCapacity / (1000 * 1 ether);
+        // max supply of product NFT token
+        uint256 maxSupply = _maxCapacity / 1000;
         shNFT.mint(productAddr, maxSupply, "");
         uint256 tokenId = shNFT.getCurrentTokenID();
+
         ISHProduct(productAddr).setTokenId(tokenId);
         
         emit ProductCreated(_name, productAddr, tokenId, maxSupply);

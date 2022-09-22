@@ -2,11 +2,10 @@
 pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract SHNFT is ERC1155, ERC1155Holder, Ownable {
+contract SHNFT is ERC1155, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private tokenIds;
 
@@ -45,8 +44,8 @@ contract SHNFT is ERC1155, ERC1155Holder, Ownable {
         uint256 _amount,
         string calldata _uri
     ) external onlyOwner {
+    
         tokenIds.increment();
-
         uint256 _id = tokenIds.current();
         creators[_id] = msg.sender;
 
@@ -55,8 +54,8 @@ contract SHNFT is ERC1155, ERC1155Holder, Ownable {
         if (bytes(_uri).length > 0) {
             emit URI(_uri, _id);
         }
-
         _mint(_to, _id, _amount, bytes(""));
+
         tokenSupply[_id] = _amount;
     }
 
@@ -91,17 +90,5 @@ contract SHNFT is ERC1155, ERC1155Holder, Ownable {
      */
     function totalSupply(uint256 _id) public view returns (uint256) {
         return tokenSupply[_id];
-    }
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(
-            ERC1155,
-            ERC1155Receiver
-        )
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
     }
 }

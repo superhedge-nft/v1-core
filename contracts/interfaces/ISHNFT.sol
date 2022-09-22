@@ -6,7 +6,7 @@ interface ISHNFT {
 
     function symbol() external view returns (string memory);
 
-    function mint(address _to, uint256 _amount, string calldata _uri) external returns (uint256);
+    function mint(address _to, uint256 _amount, string calldata _uri) external;
 
     function safeTransferFrom(
         address _from,
