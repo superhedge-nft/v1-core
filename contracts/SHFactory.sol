@@ -2,10 +2,10 @@
 pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IShNFT.sol";
-import "./interfaces/IShProduct.sol";
-import "./ShNFT.sol";
-import "./ShProduct.sol";
+import "./interfaces/ISHNFT.sol";
+import "./interfaces/ISHProduct.sol";
+import "./SHNFT.sol";
+import "./SHProduct.sol";
 
 contract ShFactory is Ownable {
 
