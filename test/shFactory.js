@@ -7,21 +7,20 @@ describe("ShFactory test suite", function () {
   before(async () => {
     [owner, qredoDeribit] = await ethers.getSigners();
 
-    const ShFactory = await ethers.getContractFactory("ShFactory");
-    shFactory = await ShFactory.deploy(
+    const SHFactory = await ethers.getContractFactory("SHFactory");
+    shFactory = await SHFactory.deploy(
       "Superhedge NFT",
       "SHN"
     );
     await shFactory.deployed();
-
-    console.log(shFactory.address);
   });
 
   it("Create product", async() => {
     const shNFT = await shFactory.shNFT();
-    console.log(shNFT);
-    await shFactory.createProduct(
-      "BTC Defensive Spread",
+    const productName = "BTC Defensive Spread";
+
+    expect(await shFactory.createProduct(
+      productName,
       "BTC/USD",
       qredoDeribit.address,
       10, // 0.10% in basis points
@@ -31,6 +30,10 @@ describe("ShFactory test suite", function () {
       1666972800,
       1000000,
       shNFT
-    );
+    )).to.be.emit(shFactory, "ProductCreated");
+
+    // get product
+    const productAddr = await shFactory.getProduct(productName);
+    console.log(`SHProduct contract deployed at ${productAddr}`);
   });
 });
