@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract ShNFT is ERC1155, ERC1155Holder, Ownable {
+contract SHNFT is ERC1155, ERC1155Holder, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private tokenIds;
 

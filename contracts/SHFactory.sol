@@ -7,12 +7,12 @@ import "./interfaces/ISHProduct.sol";
 import "./SHNFT.sol";
 import "./SHProduct.sol";
 
-contract ShFactory is Ownable {
+contract SHFactory is Ownable {
 
     mapping(string => address) public getProduct;
     address[] public products;
 
-    IShNFT public shNFT;
+    ISHNFT public shNFT;
 
     event NFTCreated(
         address indexed nft,
@@ -33,8 +33,8 @@ contract ShFactory is Ownable {
     ) {
         bytes32 salt = keccak256(abi.encodePacked(_nftName, _nftSymbol));
 
-        ShNFT _shNFT = new ShNFT{salt : salt}(_nftName, _nftSymbol);
-        shNFT = IShNFT(address(_shNFT));
+        SHNFT _shNFT = new SHNFT{salt : salt}(_nftName, _nftSymbol);
+        shNFT = ISHNFT(address(_shNFT));
 
         emit NFTCreated(address(_shNFT), _nftName, _nftSymbol);
     }
@@ -49,12 +49,12 @@ contract ShFactory is Ownable {
         uint256 _issuanceDate,
         uint256 _maturityDate,
         uint256 _maxCapacity,
-        IShNFT _shNFT
+        ISHNFT _shNFT
     ) external onlyOwner {
         require(getProduct[_name] == address(0), "Product already exists");
         bytes32 salt = keccak256(abi.encodePacked(_name));
 
-        address productAddr = address(new ShProduct{salt:salt}(
+        address productAddr = address(new SHProduct{salt:salt}(
             _name,
             _underlying,
             _qredo_derebit,
@@ -71,8 +71,9 @@ contract ShFactory is Ownable {
         products.push(productAddr);
         
         uint256 maxSupply = _maxCapacity / (1000 * 1 ether);
-        uint256 tokenId = shNFT.mint(productAddr, maxSupply, "");
-        IShProduct(productAddr).setTokenId(tokenId);
+        shNFT.mint(productAddr, maxSupply, "");
+        uint256 tokenId = shNFT.getCurrentTokenID();
+        ISHProduct(productAddr).setTokenId(tokenId);
         
         emit ProductCreated(_name, productAddr, tokenId, maxSupply);
     }

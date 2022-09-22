@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./interfaces/ISHNFT.sol";
 import "./SHNFT.sol";
 
-contract ShProduct is ReentrancyGuard {
+contract SHProduct is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     string public name;
@@ -24,7 +24,7 @@ contract ShProduct is ReentrancyGuard {
     uint256 public maturityDate;
     uint256 public immutable MAX_CAPACITY;
 
-    IShNFT public shNFT;
+    ISHNFT public shNFT;
 
     event ShNFTCreated(
         address indexed _product,
@@ -46,7 +46,7 @@ contract ShProduct is ReentrancyGuard {
         uint256 _issuanceDate,
         uint256 _maturityDate,
         uint256 _maxCapacity,
-        IShNFT _shNFT
+        ISHNFT _shNFT
     ) {
         name = _name;
         underlying = _underlying;

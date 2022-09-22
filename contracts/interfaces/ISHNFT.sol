@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-interface IShNFT {
+interface ISHNFT {
     function name() external view returns (string memory);
 
     function symbol() external view returns (string memory);
@@ -15,4 +15,6 @@ interface IShNFT {
         uint256 _amount,
         bytes memory _data
     ) external;
+
+    function getCurrentTokenID() external view returns (uint256);
 }
