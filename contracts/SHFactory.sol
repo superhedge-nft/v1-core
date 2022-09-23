@@ -7,11 +7,15 @@ import "./interfaces/ISHProduct.sol";
 import "./SHNFT.sol";
 import "./SHProduct.sol";
 
+/**
+ * @notice factory contract to create new products(vaults)
+ */
 contract SHFactory is Ownable {
-
+    /// @notice mapping from product name to product address 
     mapping(string => address) public getProduct;
+    /// @notice array of products' addresses
     address[] public products;
-
+    /// @notice ERC1155 NFT collection
     ISHNFT public shNFT;
 
     event NFTCreated(
@@ -27,6 +31,10 @@ contract SHFactory is Ownable {
         uint256 maxSupply
     );
 
+    /**
+     * @param _nftName is the name of NFT collection
+     * @param _nftSymbol is the symbol of NFT collection
+     */
     constructor(
         string memory _nftName,
         string memory _nftSymbol
@@ -39,10 +47,18 @@ contract SHFactory is Ownable {
         emit NFTCreated(address(_shNFT), _nftName, _nftSymbol);
     }
 
+    /**
+     * @notice function to create new product(vault)
+     * @param _name is the product name
+     * @param _underlying is the underlying asset label
+     * @param _qredo_deribit is the wallet address of Deribit trading platform
+     * @param _coupon is the weekly coupon percentage(in basis points)
+     * @param _maxCapacity is the maximum USDC amount that this product can accept
+     */
     function createProduct(
         string memory _name,
         string memory _underlying,
-        address _qredo_derebit,
+        address _qredo_deribit,
         uint256 _coupon,
         uint256 _strikePrice1,
         uint256 _strikePrice2,
@@ -57,7 +73,7 @@ contract SHFactory is Ownable {
         address productAddr = address(new SHProduct{salt:salt}(
             _name,
             _underlying,
-            _qredo_derebit,
+            _qredo_deribit,
             _coupon,
             _strikePrice1,
             _strikePrice2,
@@ -80,6 +96,9 @@ contract SHFactory is Ownable {
         emit ProductCreated(_name, productAddr, tokenId, maxSupply);
     }
 
+    /**
+     * @notice returns the number of products
+     */
     function numOfProducts() external view returns (uint256) {
         return products.length;
     }

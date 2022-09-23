@@ -24,7 +24,9 @@ contract SHProduct is ERC1155Holder, ReentrancyGuard {
     uint256 public strikePrice2;
     uint256 public issuanceDate;
     uint256 public maturityDate;
-    uint256 public immutable MAX_CAPACITY;
+    uint256 public maxCapacity;
+
+    uint256 public constant DELAY = 4 hours;
 
     ISHNFT public shNFT;
 
@@ -59,7 +61,7 @@ contract SHProduct is ERC1155Holder, ReentrancyGuard {
 
         issuanceDate = _issuanceDate;
         maturityDate = _maturityDate;
-        MAX_CAPACITY = _maxCapacity;
+        maxCapacity = _maxCapacity;
 
         shNFT = _shNFT;
     }
