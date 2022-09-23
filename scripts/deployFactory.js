@@ -7,21 +7,14 @@
 const hre = require("hardhat");
 
 async function main() {
-  const [owner] = await ethers.getSigners();
-  const MockUSDC = await ethers.getContractFactory("MockUSDC");
-  const mockUSDC = await MockUSDC.deploy();
-  await mockUSDC.deployed();
+    const SHFactory = await ethers.getContractFactory("SHFactory");
+    shFactory = await SHFactory.deploy(
+      "Superhedge NFT",
+      "SHN"
+    );
+    await shFactory.deployed();
 
-  const ShProduct = await ethers.getContractFactory("ShProduct");
-  const shProduct = await ShProduct.deploy(
-    mockUSDC.address,
-    owner.address,
-    "Superhedge NFT",
-    "SHN"
-  );
-  await shProduct.deployed();
-
-  console.log(`ShProduct contract deployed at ${shProduct.address}`);
+    console.log(`SHFactory contract deployed at ${shFactory.address}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
