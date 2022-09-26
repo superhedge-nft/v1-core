@@ -17,4 +17,6 @@ interface ISHNFT {
     ) external;
 
     function getCurrentTokenID() external view returns (uint256);
+
+    function totalSupply(uint256 _id) external view returns (uint256);
 }
