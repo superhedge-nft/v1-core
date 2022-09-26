@@ -13,6 +13,8 @@ import "./SHProduct.sol";
 contract SHFactory is Ownable {
     /// @notice mapping from product name to product address 
     mapping(string => address) public getProduct;
+    /// @notice Boolean check for if an address is an instrument
+    mapping(address => bool) public isProduct;
     /// @notice array of products' addresses
     address[] public products;
     /// @notice ERC1155 NFT collection
@@ -84,6 +86,7 @@ contract SHFactory is Ownable {
         ));
 
         getProduct[_name] = productAddr;
+        isProduct[productAddr] = true;
         products.push(productAddr);
         
         // max supply of product NFT token
