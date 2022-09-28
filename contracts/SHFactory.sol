@@ -4,7 +4,6 @@ pragma solidity 0.8.9;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/ISHNFT.sol";
 import "./interfaces/ISHProduct.sol";
-import "./SHNFT.sol";
 import "./SHProduct.sol";
 
 /**
@@ -17,86 +16,86 @@ contract SHFactory is Ownable {
     mapping(address => bool) public isProduct;
     /// @notice array of products' addresses
     address[] public products;
-    /// @notice ERC1155 NFT collection
-    ISHNFT public shNFT;
-
-    event NFTCreated(
-        address indexed nft,
-        string name,
-        string symbol
-    );
+    /// @notice ERC1155 NFT contract address
 
     event ProductCreated(
         string name, 
         address indexed product,
-        uint256 tokenId,
         uint256 maxSupply
     );
 
-    /**
-     * @param _nftName is the name of NFT collection
-     * @param _nftSymbol is the symbol of NFT collection
-     */
-    constructor(
-        string memory _nftName,
-        string memory _nftSymbol
-    ) {
-        bytes32 salt = keccak256(abi.encodePacked(_nftName, _nftSymbol));
-
-        SHNFT _shNFT = new SHNFT{salt : salt}(_nftName, _nftSymbol);
-        shNFT = ISHNFT(address(_shNFT));
-
-        emit NFTCreated(address(_shNFT), _nftName, _nftSymbol);
-    }
+    event IssuanceCycleSet(
+        address indexed product,
+        uint256 coupon,
+        uint256 strikePrice1,
+        uint256 strikePrice2
+    );
 
     /**
      * @notice function to create new product(vault)
      * @param _name is the product name
      * @param _underlying is the underlying asset label
+     * @param _uri is the token URI of current product
      * @param _qredo_deribit is the wallet address of Deribit trading platform
-     * @param _coupon is the weekly coupon percentage(in basis points)
      * @param _maxCapacity is the maximum USDC amount that this product can accept
+     * @param _issuanceCycle is the struct variable with issuance date, 
+        maturiy date, coupon, strike1 and strke2
      */
     function createProduct(
-        string memory _name,
-        string memory _underlying,
+        string calldata _name,
+        string calldata _underlying,
+        string calldata _uri,
         address _qredo_deribit,
-        uint256 _coupon,
-        uint256 _strikePrice1,
-        uint256 _strikePrice2,
-        uint256 _issuanceDate,
-        uint256 _maturityDate,
+        address _shNFT,
         uint256 _maxCapacity,
-        ISHNFT _shNFT
+        ISHProduct.IssuanceCycle calldata _issuanceCycle        
     ) external onlyOwner {
         require(getProduct[_name] == address(0), "Product already exists");
+        uint256 maxSupply = _maxCapacity % 1000;
+        require(maxSupply == 0, "Max capacity must be whole-number thousands");
+
         bytes32 salt = keccak256(abi.encodePacked(_name));
         // create new product contract
         address productAddr = address(new SHProduct{salt:salt}(
             _name,
             _underlying,
             _qredo_deribit,
-            _coupon,
-            _strikePrice1,
-            _strikePrice2,
-            _issuanceDate,
-            _maturityDate,
+            _shNFT,
+            address(this),
             _maxCapacity,
-            _shNFT
+            _issuanceCycle
         ));
 
         getProduct[_name] = productAddr;
         isProduct[productAddr] = true;
         products.push(productAddr);
         
-        // max supply of product NFT token
-        uint256 maxSupply = _maxCapacity / 1000;
-        shNFT.mint(productAddr, maxSupply, "");
-        uint256 tokenId = shNFT.getCurrentTokenID();
-
-        ISHProduct(productAddr).setTokenId(tokenId);
+        setIssuanceCycle(productAddr, _issuanceCycle, _uri);
         
-        emit ProductCreated(_name, productAddr, tokenId, maxSupply);
+        emit ProductCreated(_name, productAddr, maxSupply);
+    }
+
+    function setIssuanceCycle(
+        address _product,
+        ISHProduct.IssuanceCycle calldata _issuanceCycle,
+        string memory _uri
+    ) public onlyOwner {
+        ISHProduct(_product).setIssuanceCycle(_issuanceCycle);
+        uint256 maxCapacity = ISHProduct(_product).maxCapacity();
+        uint256 maxSupply = maxCapacity / 1000;
+
+        address shNFT = ISHProduct(_product).shNFT();
+        ISHNFT(shNFT).mint(_product, maxSupply,_uri);
+
+        uint256 tokenId = ISHNFT(shNFT).getCurrentTokenID();
+        ISHProduct(_product).setTokenId(tokenId);
+
+        emit IssuanceCycleSet(
+            _product,
+            _issuanceCycle.coupon, 
+            _issuanceCycle.strikePrice1, 
+            _issuanceCycle.strikePrice2
+        );
     }
 
     /**
