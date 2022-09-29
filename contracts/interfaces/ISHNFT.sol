@@ -6,7 +6,7 @@ interface ISHNFT {
 
     function symbol() external view returns (string memory);
 
-    function mint(address _to, uint256 _amount, string calldata _uri) external;
+    function mint(address _to, uint256 _id, uint256 _amount, string calldata _uri) external;
 
     function safeTransferFrom(
         address _from,
@@ -18,5 +18,9 @@ interface ISHNFT {
 
     function getCurrentTokenID() external view returns (uint256);
 
+    function tokenIdIncrement() external;
+
     function totalSupply(uint256 _id) external view returns (uint256);
+
+    function addMinter(address _account) external;
 }

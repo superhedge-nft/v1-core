@@ -2,10 +2,10 @@
 pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract SHNFT is ERC1155, Ownable {
+contract SHNFT is ERC1155, AccessControl {
     using Counters for Counters.Counter;
     /// @notice token ID, starts in 1
     Counters.Counter private tokenIds;
@@ -22,12 +22,23 @@ contract SHNFT is ERC1155, Ownable {
     /// @notice mapping from token ID to supply
     mapping(uint256 => uint256) public tokenSupply;
 
+    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
     constructor(
         string memory _name, 
-        string memory _symbol
+        string memory _symbol,
+        address _factory
     ) ERC1155("") {
         name = _name;
         symbol = _symbol;
+
+        tokenIds.increment();
+
+        _setupRole(OWNER_ROLE, msg.sender);
+        _setupRole(ADMIN_ROLE, _factory);
+        _setRoleAdmin(MINTER_ROLE, ADMIN_ROLE);
     }
 
     /**
@@ -68,17 +79,17 @@ contract SHNFT is ERC1155, Ownable {
     /**
      * @dev Creates a new token type and assigns _supply to an address
      * @param _to owner address of the new token
+     * @param _id ID of the token
      * @param _amount Optional amount to supply the first owner
      * @param _uri Optional URI for this token type
      */
     function mint(
         address _to,
+        uint256 _id,
         uint256 _amount,
         string calldata _uri
-    ) external onlyOwner {
-        tokenIds.increment();
+    ) external onlyRole(MINTER_ROLE) {
         
-        uint256 _id = tokenIds.current();
         creators[_id] = msg.sender;
 
         _setTokenURI(_id, _uri);
@@ -88,7 +99,11 @@ contract SHNFT is ERC1155, Ownable {
         }
         _mint(_to, _id, _amount, bytes(""));
 
-        tokenSupply[_id] = _amount;
+        tokenSupply[_id] += _amount;
+    }
+
+    function tokenIdIncrement() external onlyRole(ADMIN_ROLE) {
+        tokenIds.increment();
     }
 
     /**
@@ -96,12 +111,13 @@ contract SHNFT is ERC1155, Ownable {
      * @param _id ID of the token
      * @param _uri Optional URI for this token ID
      */
-    function setTokenURI(
+    /* function setTokenURI(
         uint256 _id, 
         string calldata _uri
-    ) external onlyOwner {
+    ) external onlyRole(OWNER_ROLE) {
+        require(_exists(_id), "ERC1155#uri: NONEXISTENT_TOKEN");
         _setTokenURI(_id, _uri);
-    }
+    } */
 
     /**
      * @dev Sets `tokenURI` as the tokenURI of `tokenId`.
@@ -112,5 +128,31 @@ contract SHNFT is ERC1155, Ownable {
     {
         _tokenURIs[tokenId] = tokenURI;
         emit URI(uri(tokenId), tokenId);
+    }
+
+    /**
+     * @dev Adds minter role to the product contract to mint ERC1155 token to the depositors
+     * @param _account The address of product contract
+     */
+    function addMinter(
+        address _account
+    ) external onlyRole(ADMIN_ROLE) {
+        grantRole(MINTER_ROLE, _account);
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(
+            AccessControl,
+            ERC1155
+        )
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 }
