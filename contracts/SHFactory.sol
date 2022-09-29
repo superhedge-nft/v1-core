@@ -20,6 +20,7 @@ contract SHFactory is Ownable {
 
     event ProductCreated(
         string name, 
+        string underlying,
         address indexed product,
         uint256 maxSupply
     );
@@ -35,7 +36,6 @@ contract SHFactory is Ownable {
      * @notice function to create new product(vault)
      * @param _name is the product name
      * @param _underlying is the underlying asset label
-     * @param _uri is the token URI of current product
      * @param _qredo_deribit is the wallet address of Deribit trading platform
      * @param _maxCapacity is the maximum USDC amount that this product can accept
      * @param _issuanceCycle is the struct variable with issuance date, 
@@ -44,15 +44,14 @@ contract SHFactory is Ownable {
     function createProduct(
         string calldata _name,
         string calldata _underlying,
-        string calldata _uri,
         address _qredo_deribit,
         address _shNFT,
         uint256 _maxCapacity,
         ISHProduct.IssuanceCycle calldata _issuanceCycle        
     ) external onlyOwner {
         require(getProduct[_name] == address(0), "Product already exists");
-        uint256 maxSupply = _maxCapacity % 1000;
-        require(maxSupply == 0, "Max capacity must be whole-number thousands");
+        /* uint256 maxSupply = _maxCapacity % 1000;
+        require(maxSupply == 0, "Max capacity must be whole-number thousands"); */
 
         bytes32 salt = keccak256(abi.encodePacked(_name));
         // create new product contract
@@ -61,7 +60,6 @@ contract SHFactory is Ownable {
             _underlying,
             _qredo_deribit,
             _shNFT,
-            address(this),
             _maxCapacity,
             _issuanceCycle
         ));
@@ -70,25 +68,24 @@ contract SHFactory is Ownable {
         isProduct[productAddr] = true;
         products.push(productAddr);
         
-        setIssuanceCycle(productAddr, _issuanceCycle, _uri);
+        ISHNFT(_shNFT).addMinter(productAddr);
+        setIssuanceCycle(productAddr, _issuanceCycle);
         
-        emit ProductCreated(_name, productAddr, maxSupply);
+        emit ProductCreated(_name, _underlying, productAddr, _maxCapacity);
     }
 
     function setIssuanceCycle(
         address _product,
-        ISHProduct.IssuanceCycle calldata _issuanceCycle,
-        string memory _uri
+        ISHProduct.IssuanceCycle calldata _issuanceCycle
     ) public onlyOwner {
-        ISHProduct(_product).setIssuanceCycle(_issuanceCycle);
-        uint256 maxCapacity = ISHProduct(_product).maxCapacity();
-        uint256 maxSupply = maxCapacity / 1000;
 
         address shNFT = ISHProduct(_product).shNFT();
-        ISHNFT(shNFT).mint(_product, maxSupply,_uri);
+        ISHNFT(shNFT).tokenIdIncrement();
 
         uint256 tokenId = ISHNFT(shNFT).getCurrentTokenID();
+
         ISHProduct(_product).setTokenId(tokenId);
+        ISHProduct(_product).setIssuanceCycle(_issuanceCycle);
 
         emit IssuanceCycleSet(
             _product,
