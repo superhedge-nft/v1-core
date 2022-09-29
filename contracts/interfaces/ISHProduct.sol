@@ -7,6 +7,7 @@ interface ISHProduct {
         uint256 coupon;
         uint256 strikePrice1;
         uint256 strikePrice2;
+        string uri;
     }
 
     /// @notice Enum representing product status
