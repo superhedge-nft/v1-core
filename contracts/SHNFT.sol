@@ -26,6 +26,10 @@ contract SHNFT is ERC1155, AccessControl {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+    event Mint(address _to, uint256 _id, uint256 _amount, string _uri);
+
+    event Burn(address _from, uint256 _id, uint256 _amount);
+
     constructor(
         string memory _name, 
         string memory _symbol,
@@ -92,16 +96,38 @@ contract SHNFT is ERC1155, AccessControl {
         
         creators[_id] = msg.sender;
 
-        _setTokenURI(_id, _uri);
-
         if (bytes(_uri).length > 0) {
+            _setTokenURI(_id, _uri);
             emit URI(_uri, _id);
         }
         _mint(_to, _id, _amount, bytes(""));
 
         tokenSupply[_id] += _amount;
+
+        emit Mint(_to, _id, _amount, _uri);
     }
 
+    /**
+     * @dev Destroys `amount` tokens of token type `id` from `from`
+     * @param _from owner address of the given token ID
+     * @param _id ID of the token
+     * @param _amount amount to be burned
+     */
+    function burn(
+        address _from,
+        uint256 _id,
+        uint256 _amount
+    ) external onlyRole(MINTER_ROLE) {
+        delete creators[_id];
+        _burn(_from, _id, _amount);
+        tokenSupply[_id] -= _amount;
+
+        emit Burn(_from, _id, _amount);
+    }
+
+    /**
+     * @dev Increase token ID every issuance cycle
+     */
     function tokenIdIncrement() external onlyRole(ADMIN_ROLE) {
         tokenIds.increment();
     }
