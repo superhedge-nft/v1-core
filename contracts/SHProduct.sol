@@ -21,8 +21,8 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     address public constant ops = 0x6c3224f9b3feE000A444681d5D45e4532D5BA531;
     address public qredoDeribit;
 
-    uint256 public tokenId;
     uint256 public maxCapacity;
+    uint256 public currentTokenId;
     uint256 public currentCapacity;
 
     Status public status;
@@ -32,16 +32,17 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
 
     mapping(address => uint256) public balances;
 
-    event ShNFTCreated(
-        address indexed _product,
-        address indexed _shNFT
+    event Deposit(
+        address _from,
+        uint256 _amount,
+        uint256 _currentTokenId,
+        uint256 _supply
     );
 
-    event Deposit(
-        address _user,
+    event Withdraw(
+        address _to,
         uint256 _amount,
-        uint256 _tokenId,
-        uint256 _supply
+        uint256 _currentTokenId
     );
 
     /**
@@ -77,6 +78,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
 
     function fundAccept() external onlyOps {
         status = Status.Accepted;
+        currentCapacity = 0;
     }
 
     function fundLock() external onlyOps {
@@ -91,8 +93,8 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         status = Status.Mature;
     }
 
-    function setTokenId(uint256 _tokenId) external {
-        tokenId = _tokenId;
+    function setCurrentTokenId(uint256 _id) external {
+        currentTokenId = _id;
     }
 
     function setIssuanceCycle(
@@ -102,7 +104,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     }
     
     /**
-     * @notice Deposits the USDC into the structured product and mint ERC1155 NFT
+     * @dev Deposits the USDC into the structured product and mint ERC1155 NFT
      * @param _amount is the amount of USDC to deposit
      */
     function deposit(uint256 _amount) external nonReentrant onlyAccepted {
@@ -111,14 +113,40 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         uint256 supply = _amount % (1000 * 10 ** decimals);
         require(supply == 0, "Amount must be whole-number thousands");
 
+        uint256 prevTokenId = currentTokenId - 1;
+        uint256 prevBalance = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
+
         currentCapacity += _amount;
         require(maxCapacity >= currentCapacity, "Product is full");
 
         IERC20(USDC).safeTransferFrom(msg.sender, address(this), _amount);
 
-        ISHNFT(shNFT).mint(msg.sender, tokenId, supply, "");
-        balances[msg.sender] = _amount;
+        if (prevBalance > 0) {
+            ISHNFT(shNFT).burn(msg.sender, prevTokenId, prevBalance);
+            supply += prevBalance;
+        }
+
+        ISHNFT(shNFT).mint(msg.sender, currentTokenId, supply, issuanceCycle.uri);
+        balances[msg.sender] += _amount;
         
-        emit Deposit(msg.sender, _amount, tokenId, supply);
+        emit Deposit(msg.sender, _amount, currentTokenId, supply);
+    }
+
+    /**
+     * @dev Withdraws the specific amount of USDC from the structured product
+     * @param _amount is the amount of USDC to withdraw
+     */
+    function withdraw(uint256 _amount) external nonReentrant onlyAccepted {
+        require(_amount > 0, "Amount must be greater than zero");
+        uint256 decimals = IUSDC(USDC).decimals();
+        uint256 supply = _amount % (1000 * 10 ** decimals);
+        require(supply == 0, "Amount must be whole-number thousands");
+        require(balances[msg.sender] >= _amount, "Exceeds current balance");
+
+        ISHNFT(shNFT).burn(msg.sender, currentTokenId, supply);
+        currentCapacity -= _amount;
+        balances[msg.sender] -= _amount;
+
+        emit Withdraw(msg.sender, _amount, currentTokenId);
     }
 }
