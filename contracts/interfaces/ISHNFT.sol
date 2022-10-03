@@ -20,7 +20,7 @@ interface ISHNFT {
         bytes memory _data
     ) external;
 
-    function getCurrentTokenID() external view returns (uint256);
+    function currentTokenID() external view returns (uint256);
 
     function tokenIdIncrement() external;
 

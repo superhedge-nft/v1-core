@@ -69,22 +69,32 @@ contract SHFactory is Ownable {
         products.push(productAddr);
         
         ISHNFT(_shNFT).addMinter(productAddr);
-        setIssuanceCycle(productAddr, _issuanceCycle);
+        _setIssuanceCycle(productAddr, _issuanceCycle);
         
         emit ProductCreated(_name, _underlying, productAddr, _maxCapacity);
     }
 
     function setIssuanceCycle(
-        address _product,
+        address _product, 
         ISHProduct.IssuanceCycle calldata _issuanceCycle
-    ) public onlyOwner {
+    ) external onlyOwner {
+        _setIssuanceCycle(_product, _issuanceCycle);
+    }
+
+    function _setIssuanceCycle(
+        address _product,
+        ISHProduct.IssuanceCycle memory _issuanceCycle
+    ) internal {
 
         address shNFT = ISHProduct(_product).shNFT();
         ISHNFT(shNFT).tokenIdIncrement();
+        uint256 tokenId = ISHNFT(shNFT).currentTokenID();
 
-        uint256 tokenId = ISHNFT(shNFT).getCurrentTokenID();
+        if (bytes(_issuanceCycle.uri).length != 0) {
+            ISHNFT(shNFT).setTokenURI(tokenId, _issuanceCycle.uri);
+        }
 
-        ISHProduct(_product).setTokenId(tokenId);
+        ISHProduct(_product).setCurrentTokenId(tokenId);
         ISHProduct(_product).setIssuanceCycle(_issuanceCycle);
 
         emit IssuanceCycleSet(

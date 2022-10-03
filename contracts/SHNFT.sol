@@ -38,8 +38,6 @@ contract SHNFT is ERC1155, AccessControl {
         name = _name;
         symbol = _symbol;
 
-        tokenIds.increment();
-
         _setupRole(OWNER_ROLE, msg.sender);
         _setupRole(ADMIN_ROLE, _factory);
         _setRoleAdmin(MINTER_ROLE, ADMIN_ROLE);
@@ -58,17 +56,8 @@ contract SHNFT is ERC1155, AccessControl {
     /**
      * @dev Returns the current token ID
      */
-    function getCurrentTokenID() public view returns (uint256) {
+    function currentTokenID() public view returns (uint256) {
         return tokenIds.current();
-    }
-
-    /**
-     * @dev Returns whether the specified token exists by checking to see if it has a creator
-     * @param _id uint256 ID of the token to query the existence of
-     * @return bool whether the token exists
-     */
-    function _exists(uint256 _id) public view returns (bool) {
-        return creators[_id] != address(0);
     }
 
     /**
@@ -143,6 +132,15 @@ contract SHNFT is ERC1155, AccessControl {
     ) external onlyRole(ADMIN_ROLE) {
         require(_exists(_id), "ERC1155#uri: NONEXISTENT_TOKEN");
         _setTokenURI(_id, _uri);
+    }
+
+    /**
+     * @dev Returns whether the specified token exists by checking to see if it has a creator
+     * @param _id uint256 ID of the token to query the existence of
+     * @return bool whether the token exists
+     */
+    function _exists(uint256 _id) internal view returns (bool) {
+        return creators[_id] != address(0);
     }
 
     /**
