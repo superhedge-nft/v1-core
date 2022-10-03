@@ -23,4 +23,6 @@ interface ISHNFT {
     function totalSupply(uint256 _id) external view returns (uint256);
 
     function addMinter(address _account) external;
+
+    function setTokenURI(uint256 _id, string calldata _uri) external;
 }

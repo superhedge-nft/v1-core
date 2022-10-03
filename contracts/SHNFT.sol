@@ -111,13 +111,13 @@ contract SHNFT is ERC1155, AccessControl {
      * @param _id ID of the token
      * @param _uri Optional URI for this token ID
      */
-    /* function setTokenURI(
+    function setTokenURI(
         uint256 _id, 
         string calldata _uri
-    ) external onlyRole(OWNER_ROLE) {
+    ) external onlyRole(ADMIN_ROLE) {
         require(_exists(_id), "ERC1155#uri: NONEXISTENT_TOKEN");
         _setTokenURI(_id, _uri);
-    } */
+    }
 
     /**
      * @dev Sets `tokenURI` as the tokenURI of `tokenId`.
