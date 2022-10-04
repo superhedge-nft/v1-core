@@ -50,8 +50,7 @@ contract SHFactory is Ownable {
         ISHProduct.IssuanceCycle calldata _issuanceCycle        
     ) external onlyOwner {
         require(getProduct[_name] == address(0), "Product already exists");
-        /* uint256 maxSupply = _maxCapacity % 1000;
-        require(maxSupply == 0, "Max capacity must be whole-number thousands"); */
+        require((_maxCapacity % 1000) == 0, "Max capacity must be whole-number thousands");
 
         bytes32 salt = keccak256(abi.encodePacked(_name));
         // create new product contract
@@ -90,9 +89,9 @@ contract SHFactory is Ownable {
         ISHNFT(shNFT).tokenIdIncrement();
         uint256 tokenId = ISHNFT(shNFT).currentTokenID();
 
-        if (bytes(_issuanceCycle.uri).length != 0) {
+        /* if (bytes(_issuanceCycle.uri).length != 0) {
             ISHNFT(shNFT).setTokenURI(tokenId, _issuanceCycle.uri);
-        }
+        } */
 
         ISHProduct(_product).setCurrentTokenId(tokenId);
         ISHProduct(_product).setIssuanceCycle(_issuanceCycle);

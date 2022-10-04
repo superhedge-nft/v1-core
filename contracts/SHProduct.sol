@@ -58,6 +58,11 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         _;
     }
 
+    modifier notIssued() {
+        require(status != Status.Issued, "Issued status");
+        _;
+    }
+
     constructor(
         string memory _name,
         string memory _underlying,
@@ -87,10 +92,12 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
 
     function issuance() external onlyOps {
         status = Status.Issued;
+        issuanceCycle.issuanceDate = block.timestamp;
     }
 
     function mature() external onlyOps {
         status = Status.Mature;
+        issuanceCycle.maturityDate = block.timestamp;
     }
 
     function setCurrentTokenId(uint256 _id) external {
@@ -99,7 +106,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
 
     function setIssuanceCycle(
         IssuanceCycle calldata _issuanceCycle
-    ) external onlyOwner {
+    ) external onlyOwner notIssued {
         issuanceCycle = _issuanceCycle;
     }
     

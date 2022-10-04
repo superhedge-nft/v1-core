@@ -8,10 +8,13 @@ interface ISHProduct {
         uint256 strikePrice1;
         uint256 strikePrice2;
         string uri;
+        uint256 issuanceDate;
+        uint256 maturityDate;
     }
 
     /// @notice Enum representing product status
     enum Status {
+        Pending,
         Accepted,
         Locked,
         Issued,
