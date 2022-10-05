@@ -9,7 +9,7 @@ import "../interfaces/ISHProduct.sol";
 import "../interfaces/ISHNFT.sol";
 import "../interfaces/IUSDC.sol";
 import "../SHNFT.sol";
-import "hardhat/console.sol";
+
 contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -42,7 +42,8 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
     event Withdraw(
         address _to,
         uint256 _amount,
-        uint256 _currentTokenId
+        uint256 _currentTokenId,
+        uint256 _amountToBurn
     );
 
     /**
@@ -146,15 +147,17 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
     function withdraw(uint256 _amount) external nonReentrant onlyAccepted {
         require(_amount > 0, "Amount must be greater than zero");
         uint256 decimals = IUSDC(USDC).decimals();
-        uint256 supply = _amount % (1000 * 10 ** decimals);
-        require(supply == 0, "Amount must be whole-number thousands");
         require(balances[msg.sender] >= _amount, "Exceeds current balance");
 
-        ISHNFT(shNFT).burn(msg.sender, currentTokenId, supply);
-        currentCapacity -= _amount;
+        require((_amount % (1000 * 10 ** decimals)) == 0, "Amount must be whole-number thousands");
+        uint256 amountToBurn = _amount / (1000 * 10 ** decimals);
+        
+        IERC20(USDC).safeTransfer(msg.sender, _amount);
+        ISHNFT(shNFT).burn(msg.sender, currentTokenId, amountToBurn);
+        // currentCapacity -= _amount;
         balances[msg.sender] -= _amount;
 
-        emit Withdraw(msg.sender, _amount, currentTokenId);
+        emit Withdraw(msg.sender, _amount, currentTokenId, amountToBurn);
     }
 
     function setMockOps(address _ops) external {
