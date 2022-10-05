@@ -139,4 +139,65 @@ describe("SHFactory test suite", function () {
       ).to.be.revertedWith("Not accepted status");
     });
   });
+
+  describe("Withdraw", () => {
+    it("Reverts if the product status is not 'Accepted'", async() => {
+      await expect(
+        shProduct.withdraw(parseUnits("1000", 6))
+      ).to.be.revertedWith("Not accepted status");
+    });
+
+    it("Reverts if the amount is invalid", async () => {
+      await shProduct.connect(mockOps).fundAccept();
+      await expect(
+        shProduct.connect(user1).withdraw(parseUnits("3000", 6))
+      ).to.be.revertedWith("Exceeds current balance");
+
+      await expect(
+        shProduct.connect(user1).withdraw(parseUnits("1500", 6))
+      ).to.be.revertedWith("Amount must be whole-number thousands");
+    });
+
+    it("Withdraw successfully", async() => {
+      expect(
+        await shProduct.connect(user1).withdraw(parseUnits("1000", 6))
+      ).to.be.emit(shProduct, "Withdraw");
+      
+      const tokenId = await shProduct.currentTokenId();
+      expect(
+        await shNFT.balanceOf(user1.address, tokenId)
+      ).to.equal(1);
+
+      expect(
+        await shProduct.balances(user1.address)
+      ).to.equal(parseUnits("1000", 6))
+    });
+  });
+
+  describe("Set new issuance cycle", () => {
+    const newIssuanceCycle = {
+      coupon: 20, // 0.20% in basis points
+      strikePrice1: 20000,
+      strikePrice2: 18000,
+      uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH",
+      issuanceDate: 0,
+      maturityDate: 0
+    };
+
+    it("Reverts if the product status is already 'issued'", async () => {
+      await shProduct.connect(mockOps).issuance();
+      await expect(shFactory.setIssuanceCycle(
+        shProduct.address,
+        newIssuanceCycle
+      )).to.be.revertedWith("Issued status");
+    });
+
+    it("set successfully", async () => {
+      await shProduct.connect(mockOps).mature();
+      expect(await shFactory.setIssuanceCycle(
+        shProduct.address,
+        newIssuanceCycle
+      )).to.be.emit(shFactory, "IssuanceCycleSet");
+    });
+  });
 });
