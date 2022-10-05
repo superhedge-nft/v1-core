@@ -117,14 +117,14 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     function deposit(uint256 _amount) external nonReentrant onlyAccepted {
         require(_amount > 0, "Amount must be greater than zero");
         uint256 decimals = IUSDC(USDC).decimals();
-        uint256 supply = _amount % (1000 * 10 ** decimals);
-        require(supply == 0, "Amount must be whole-number thousands");
-
+        require((_amount % (1000 * 10 ** decimals)) == 0, "Amount must be whole-number thousands");
+        
+        uint256 supply = _amount / (1000 * 10 ** decimals);
         uint256 prevTokenId = currentTokenId - 1;
         uint256 prevBalance = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
 
         currentCapacity += _amount;
-        require(maxCapacity >= currentCapacity, "Product is full");
+        require((maxCapacity * 10 ** decimals) >= currentCapacity, "Product is full");
 
         IERC20(USDC).safeTransferFrom(msg.sender, address(this), _amount);
 
