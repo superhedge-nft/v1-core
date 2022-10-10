@@ -9,9 +9,11 @@ import "../interfaces/ISHProduct.sol";
 import "../interfaces/ISHNFT.sol";
 import "../interfaces/IUSDC.sol";
 import "../SHNFT.sol";
+import "../libraries/Array.sol";
 
 contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using Array for address[];
 
     string public name;
     string public underlying;
@@ -29,23 +31,10 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
     IssuanceCycle public issuanceCycle;
 
     address public shNFT;
-
-    mapping(address => uint256) public balances;
-
-    event Deposit(
-        address _from,
-        uint256 _amount,
-        uint256 _currentTokenId,
-        uint256 _supply
-    );
-
-    event Withdraw(
-        address _to,
-        uint256 _amount,
-        uint256 _currentTokenId,
-        uint256 _amountToBurn
-    );
-
+    
+    mapping(address => UserInfo) public userInfo;
+    address[] public investors;
+    
     /**
      * @dev Throws if called by any account other than the keeper.
      */
@@ -94,6 +83,20 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
     function issuance() external onlyOps {
         status = Status.Issued;
         issuanceCycle.issuanceDate = block.timestamp;
+        // burn the token of the expired issuance
+        for (uint256 i = 0; i < investors.length; i++) {
+            if (userInfo[investors[i]].principal == 0 && 
+            userInfo[investors[i]].coupon == 0 && 
+            userInfo[investors[i]].optionPayout == 0) {
+                investors.remove(i);
+            }
+            uint256 prevTokenId = currentTokenId - 1;
+            uint256 prevSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
+            if (prevSupply > 0) {
+                ISHNFT(shNFT).burn(msg.sender, prevTokenId, prevSupply);
+                ISHNFT(shNFT).mint(msg.sender, currentTokenId, prevSupply, issuanceCycle.uri);
+            }
+        }
     }
 
     function mature() external onlyOps {
@@ -119,45 +122,57 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
         require(_amount > 0, "Amount must be greater than zero");
         uint256 decimals = IUSDC(USDC).decimals();
         require((_amount % (1000 * 10 ** decimals)) == 0, "Amount must be whole-number thousands");
-
+        
         uint256 supply = _amount / (1000 * 10 ** decimals);
-        uint256 prevTokenId = currentTokenId - 1;
-        uint256 prevBalance = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
 
         currentCapacity += _amount;
         require((maxCapacity * 10 ** decimals) >= currentCapacity, "Product is full");
 
         IERC20(USDC).safeTransferFrom(msg.sender, address(this), _amount);
 
-        if (prevBalance > 0) {
-            ISHNFT(shNFT).burn(msg.sender, prevTokenId, prevBalance);
-            supply += prevBalance;
-        }
-        
         ISHNFT(shNFT).mint(msg.sender, currentTokenId, supply, issuanceCycle.uri);
-        balances[msg.sender] += _amount;
-        
+        userInfo[msg.sender].principal += _amount;
+        investors.push(msg.sender);
+
         emit Deposit(msg.sender, _amount, currentTokenId, supply);
     }
 
     /**
-     * @dev Withdraws the specific amount of USDC from the structured product
-     * @param _amount is the amount of USDC to withdraw
+     * @dev Withdraws the principal from the structured product
      */
-    function withdraw(uint256 _amount) external nonReentrant onlyAccepted {
-        require(_amount > 0, "Amount must be greater than zero");
+    function withdrawPrincipal() external nonReentrant onlyAccepted {
         uint256 decimals = IUSDC(USDC).decimals();
-        require(balances[msg.sender] >= _amount, "Exceeds current balance");
-
-        require((_amount % (1000 * 10 ** decimals)) == 0, "Amount must be whole-number thousands");
-        uint256 amountToBurn = _amount / (1000 * 10 ** decimals);
         
-        IERC20(USDC).safeTransfer(msg.sender, _amount);
-        ISHNFT(shNFT).burn(msg.sender, currentTokenId, amountToBurn);
-        // currentCapacity -= _amount;
-        balances[msg.sender] -= _amount;
+        uint256 tokenToBurn = userInfo[msg.sender].principal / (1000 * 10 ** decimals);
+        
+        IERC20(USDC).safeTransfer(msg.sender, userInfo[msg.sender].principal);
+        ISHNFT(shNFT).burn(msg.sender, currentTokenId, tokenToBurn);
+        
+        if (userInfo[msg.sender].coupon == 0 && userInfo[msg.sender].optionPayout == 0) {
+            delete userInfo[msg.sender];
+        }
 
-        emit Withdraw(msg.sender, _amount, currentTokenId, amountToBurn);
+        emit WithdrawPrincipal(msg.sender, userInfo[msg.sender].principal, currentTokenId, tokenToBurn);
+    }
+
+    function withdrawCoupon() external nonReentrant onlyAccepted {
+        uint256 productBalance = IERC20(USDC).balanceOf(address(this));
+        require(productBalance >= userInfo[msg.sender].coupon,
+            "Not enough coupon balance");
+        if (userInfo[msg.sender].coupon > 0) {
+            IERC20(USDC).safeTransfer(msg.sender, userInfo[msg.sender].coupon);
+            emit WithdrawCoupon(msg.sender, userInfo[msg.sender].coupon);
+        }
+    }
+
+    function withdrawOption() external nonReentrant onlyAccepted {
+        uint256 productBalance = IERC20(USDC).balanceOf(address(this));
+        require(productBalance >= userInfo[msg.sender].optionPayout,
+            "Not enough option balance");
+        if (userInfo[msg.sender].optionPayout > 0) {
+            IERC20(USDC).safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
+            emit WithdrawCoupon(msg.sender, userInfo[msg.sender].optionPayout);
+        }
     }
 
     function setMockOps(address _ops) external {
