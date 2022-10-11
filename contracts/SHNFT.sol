@@ -131,7 +131,7 @@ contract SHNFT is ERC1155, AccessControl {
         string calldata _uri
     ) external onlyRole(OWNER_ROLE) {
         require(_exists(_id), "ERC1155#uri: NONEXISTENT_TOKEN");
-        require(bytes(_uri).length > 0, "Invalid URI");
+        require(bytes(_uri).length > 0, "uri should not be an empty string");
         _setTokenURI(_id, _uri);
     }
 
