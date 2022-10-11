@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "./ISHNFT.sol";
+import "./ISHProduct.sol";
 
 interface ISHFactory {
     function createProduct(
-        string memory _name,
-        string memory _underlying,
+        string calldata _name,
+        string calldata _underlying,
         address _qredo_deribit,
-        uint256 _coupon,
-        uint256 _strikePrice1,
-        uint256 _strikePrice2,
-        uint256 _issuanceDate,
-        uint256 _maturityDate,
+        address _shNFT,
         uint256 _maxCapacity,
-        ISHNFT _shNFT
+        ISHProduct.IssuanceCycle calldata _issuanceCycle        
     ) external;
 
     function numOfProducts() external view returns (uint256);
