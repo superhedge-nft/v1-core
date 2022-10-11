@@ -141,6 +141,8 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
      * @dev Withdraws the principal from the structured product
      */
     function withdrawPrincipal() external nonReentrant onlyAccepted {
+        require(totalBalance() >= userInfo[msg.sender].principal,
+            "Insufficient balance");
         uint256 decimals = IUSDC(USDC).decimals();
         
         uint256 tokenToBurn = userInfo[msg.sender].principal / (1000 * 10 ** decimals);
@@ -156,9 +158,8 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
     }
 
     function withdrawCoupon() external nonReentrant onlyAccepted {
-        uint256 productBalance = IERC20(USDC).balanceOf(address(this));
-        require(productBalance >= userInfo[msg.sender].coupon,
-            "Not enough coupon balance");
+        require(totalBalance() >= userInfo[msg.sender].coupon,
+            "Insufficient balance");
         if (userInfo[msg.sender].coupon > 0) {
             IERC20(USDC).safeTransfer(msg.sender, userInfo[msg.sender].coupon);
             emit WithdrawCoupon(msg.sender, userInfo[msg.sender].coupon);
@@ -166,13 +167,19 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
     }
 
     function withdrawOption() external nonReentrant onlyAccepted {
-        uint256 productBalance = IERC20(USDC).balanceOf(address(this));
-        require(productBalance >= userInfo[msg.sender].optionPayout,
-            "Not enough option balance");
+        require(totalBalance() >= userInfo[msg.sender].optionPayout,
+            "Insufficient balance");
         if (userInfo[msg.sender].optionPayout > 0) {
             IERC20(USDC).safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
             emit WithdrawCoupon(msg.sender, userInfo[msg.sender].optionPayout);
         }
+    }
+
+    /**
+     * @notice Returns the product's total balance
+     */
+    function totalBalance() public view returns (uint256) {
+        return IERC20(USDC).balanceOf(address(this));
     }
 
     function principalBalance() external view returns (uint256) {
