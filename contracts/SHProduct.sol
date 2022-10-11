@@ -82,7 +82,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
 
     function issuance() external onlyOps {
         status = Status.Issued;
-        issuanceCycle.issuanceDate = block.timestamp;
+        // issuanceCycle.issuanceDate = block.timestamp;
         // burn the token of the expired issuance
         for (uint256 i = 0; i < investors.length; i++) {
             if (userInfo[investors[i]].principal == 0 && 
@@ -101,7 +101,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
 
     function mature() external onlyOps {
         status = Status.Mature;
-        issuanceCycle.maturityDate = block.timestamp;
+        // issuanceCycle.maturityDate = block.timestamp;
     }
 
     function setCurrentTokenId(uint256 _id) external {
@@ -173,5 +173,17 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
             IERC20(USDC).safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
             emit WithdrawCoupon(msg.sender, userInfo[msg.sender].optionPayout);
         }
+    }
+
+    function principalBalance() external view returns (uint256) {
+        return userInfo[msg.sender].principal;
+    }
+
+    function couponBalance() external view returns (uint256) {
+        return userInfo[msg.sender].coupon;
+    }
+
+    function optionBalance() external view returns (uint256) {
+        return userInfo[msg.sender].optionPayout;
     }
 }

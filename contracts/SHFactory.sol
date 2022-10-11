@@ -12,11 +12,10 @@ import "./SHProduct.sol";
 contract SHFactory is Ownable {
     /// @notice mapping from product name to product address 
     mapping(string => address) public getProduct;
-    /// @notice Boolean check for if an address is an instrument
+    /// @notice Boolean check for if an address is a product
     mapping(address => bool) public isProduct;
     /// @notice array of products' addresses
     address[] public products;
-    /// @notice ERC1155 NFT contract address
 
     event ProductCreated(
         string name, 
@@ -29,7 +28,8 @@ contract SHFactory is Ownable {
         address indexed product,
         uint256 coupon,
         uint256 strikePrice1,
-        uint256 strikePrice2
+        uint256 strikePrice2,
+        string uri
     );
 
     /**
@@ -66,7 +66,7 @@ contract SHFactory is Ownable {
         getProduct[_name] = productAddr;
         isProduct[productAddr] = true;
         products.push(productAddr);
-        
+        // add NFT minter role
         ISHNFT(_shNFT).addMinter(productAddr);
         _setIssuanceCycle(productAddr, _issuanceCycle);
         
@@ -89,10 +89,6 @@ contract SHFactory is Ownable {
         ISHNFT(shNFT).tokenIdIncrement();
         uint256 tokenId = ISHNFT(shNFT).currentTokenID();
 
-        /* if (bytes(_issuanceCycle.uri).length != 0) {
-            ISHNFT(shNFT).setTokenURI(tokenId, _issuanceCycle.uri);
-        } */
-
         ISHProduct(_product).setCurrentTokenId(tokenId);
         ISHProduct(_product).setIssuanceCycle(_issuanceCycle);
 
@@ -100,7 +96,8 @@ contract SHFactory is Ownable {
             _product,
             _issuanceCycle.coupon, 
             _issuanceCycle.strikePrice1, 
-            _issuanceCycle.strikePrice2
+            _issuanceCycle.strikePrice2,
+            _issuanceCycle.uri
         );
     }
 
