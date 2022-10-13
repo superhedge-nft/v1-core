@@ -145,7 +145,17 @@ describe("SHFactory test suite", function () {
 
     it("Withdraw principal", async () => {
       await shProduct.connect(mockOps).fundAccept();
-      await shProduct.connect(user1).withdrawPrincipal();
+      expect(
+        await shProduct.connect(user1).withdrawPrincipal()
+      ).to.be.emit(shProduct, "WithdrawPrincipal");
+    });
+
+    it("Withdraw coupon", async () => {
+      await shProduct.connect(user1).withdrawCoupon();
+    });
+
+    it("Withdraw option payout", async() => {
+      await shProduct.connect(user1).withdrawOption();
     });
   });
 
