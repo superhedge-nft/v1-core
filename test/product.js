@@ -63,7 +63,6 @@ describe("SHFactory test suite", function () {
   
       // get product
       const productAddr = await shFactory.getProduct(productName);
-      console.log(`SHProduct contract deployed at ${productAddr}`);
       const MockProduct = await ethers.getContractFactory("MockProduct");
       shProduct = MockProduct.attach(productAddr);
   
@@ -124,6 +123,12 @@ describe("SHFactory test suite", function () {
       expect(await shProduct.currentCapacity()).to.equal(amount);
     });
 
+    it("set token URI", async () => {
+      const tokenId = await shProduct.currentTokenId();
+      const URI = "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH";
+      await shNFT.setTokenURI(tokenId, URI);
+    });
+
     it("Lock funds", async () => {
       await shProduct.connect(mockOps).fundLock();
     });
@@ -133,6 +138,17 @@ describe("SHFactory test suite", function () {
       await expect(
         shProduct.connect(user2).deposit(amount2)
       ).to.be.revertedWith("Not accepted status");
+    });
+  });
+
+  describe("Check coupon & option payout balance", () => {
+    it("Check coupon balance", async () => {
+      await shProduct.connect(mockOps).weeklyCoupon();
+      const userInfo = await shProduct.userInfo(user1.address);
+      const currentTokenID = await shProduct.currentTokenId();
+      const tokenSupply = parseInt(await shNFT.balanceOf(user1.address, currentTokenID));
+      const couponBalance = tokenSupply * 1000 * Math.pow(10, 6) * 10 / 10000;
+      expect(userInfo.coupon).to.equal(couponBalance);
     });
   });
 
@@ -151,7 +167,9 @@ describe("SHFactory test suite", function () {
     });
 
     it("Withdraw coupon", async () => {
-      await shProduct.connect(user1).withdrawCoupon();
+      await expect(
+        shProduct.connect(user1).withdrawCoupon()
+      ).to.be.reverted;
     });
 
     it("Withdraw option payout", async() => {
