@@ -85,9 +85,8 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
         // issuanceCycle.issuanceDate = block.timestamp;
         // burn the token of the expired issuance
         for (uint256 i = 0; i < investors.length; i++) {
-            if (userInfo[investors[i]].principal == 0 && 
-            userInfo[investors[i]].coupon == 0 && 
-            userInfo[investors[i]].optionPayout == 0) {
+            uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
+            if (tokenSupply == 0 && userInfo[investors[i]].coupon == 0 && userInfo[investors[i]].optionPayout == 0) {
                 investors.remove(i);
             }
             uint256 prevTokenId = currentTokenId - 1;
@@ -102,6 +101,15 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
     function mature() external onlyOps {
         status = Status.Mature;
         // issuanceCycle.maturityDate = block.timestamp;
+    }
+
+    function weeklyCoupon() external onlyOps {
+        for (uint256 i = 0; i < investors.length; i++) {
+            uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
+            if (tokenSupply > 0) {
+                userInfo[investors[i]].coupon += _calcCoupon(tokenSupply);
+            }
+        }
     }
 
     function setCurrentTokenId(uint256 _id) external {
@@ -131,7 +139,7 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
         IERC20(USDC).safeTransferFrom(msg.sender, address(this), _amount);
 
         ISHNFT(shNFT).mint(msg.sender, currentTokenId, supply, issuanceCycle.uri);
-        userInfo[msg.sender].principal += _amount;
+        // userInfo[msg.sender].principal += _amount;
         investors.push(msg.sender);
 
         emit Deposit(msg.sender, _amount, currentTokenId, supply);
@@ -141,20 +149,19 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
      * @dev Withdraws the principal from the structured product
      */
     function withdrawPrincipal() external nonReentrant onlyAccepted {
-        require(totalBalance() >= userInfo[msg.sender].principal,
-            "Insufficient balance");
-        uint256 decimals = IUSDC(USDC).decimals();
+        uint256 tokenSupply = ISHNFT(shNFT).balanceOf(msg.sender, currentTokenId);
+        require(tokenSupply > 0, "No principal");
+        uint256 principal = tokenSupply * 1000 * (10 ** _underlyingDecimals());
+        require(totalBalance() >= principal, "Insufficient balance");
         
-        uint256 tokenToBurn = userInfo[msg.sender].principal / (1000 * 10 ** decimals);
-        
-        IERC20(USDC).safeTransfer(msg.sender, userInfo[msg.sender].principal);
-        ISHNFT(shNFT).burn(msg.sender, currentTokenId, tokenToBurn);
+        IERC20(USDC).safeTransfer(msg.sender, principal);
+        ISHNFT(shNFT).burn(msg.sender, currentTokenId, tokenSupply);
         
         if (userInfo[msg.sender].coupon == 0 && userInfo[msg.sender].optionPayout == 0) {
             delete userInfo[msg.sender];
         }
 
-        emit WithdrawPrincipal(msg.sender, userInfo[msg.sender].principal, currentTokenId, tokenToBurn);
+        emit WithdrawPrincipal(msg.sender, principal, currentTokenId, tokenSupply);
     }
 
     function withdrawCoupon() external nonReentrant onlyAccepted {
@@ -183,7 +190,8 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
     }
 
     function principalBalance() external view returns (uint256) {
-        return userInfo[msg.sender].principal;
+        uint256 tokenSupply = ISHNFT(shNFT).balanceOf(msg.sender, currentTokenId);
+        return tokenSupply * 1000 * (10 ** _underlyingDecimals());
     }
 
     function couponBalance() external view returns (uint256) {
@@ -192,6 +200,14 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
 
     function optionBalance() external view returns (uint256) {
         return userInfo[msg.sender].optionPayout;
+    }
+
+    function _underlyingDecimals() internal view returns (uint256) {
+        return IUSDC(USDC).decimals();
+    }
+
+    function _calcCoupon(uint256 _tokenSupply) internal view returns (uint256) {
+        return _tokenSupply * 1000 * (10 ** _underlyingDecimals()) * issuanceCycle.coupon / 10000;
     }
 
     function setMockOps(address _ops) external {

@@ -3,7 +3,6 @@ pragma solidity 0.8.9;
 
 interface ISHProduct {
     struct UserInfo {
-        uint256 principal;
         uint256 coupon;
         uint256 optionPayout;
     }

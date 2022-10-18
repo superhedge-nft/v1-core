@@ -7,12 +7,12 @@ import "./interfaces/ISHProduct.sol";
 import "./SHProduct.sol";
 
 /**
- * @notice factory contract to create new products(vaults)
+ * @notice factory contract to create new products
  */
 contract SHFactory is Ownable {
     /// @notice mapping from product name to product address 
     mapping(string => address) public getProduct;
-    /// @notice Boolean check for if an address is a product
+    /// @notice Boolean check if an address is a product
     mapping(address => bool) public isProduct;
     /// @notice array of products' addresses
     address[] public products;
