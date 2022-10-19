@@ -26,7 +26,8 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     uint256 public maxCapacity;
     uint256 public currentTokenId;
     uint256 public currentCapacity;
-
+    uint256 optionProfit;
+    
     Status public status;
     IssuanceCycle public issuanceCycle;
 
@@ -101,6 +102,20 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     function mature() external onlyOps {
         status = Status.Mature;
         // issuanceCycle.maturityDate = block.timestamp;
+        uint256 totalSupply = ISHNFT(shNFT).totalSupply(currentTokenId);
+        if (optionProfit > 0) {
+            for (uint256 i = 0; i < investors.length; i++) {
+                uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
+                userInfo[msg.sender].optionPayout += tokenSupply * optionProfit / totalSupply;
+            }
+        }
+    }
+
+    function redeemOptionPayout(uint256 _optionProfit) external {
+        IERC20(USDC).safeTransferFrom(msg.sender, address(this), _optionProfit);
+        optionProfit = _optionProfit;
+
+        emit RedeemOptionPayout(msg.sender, _optionProfit);
     }
 
     function weeklyCoupon() external onlyOps {

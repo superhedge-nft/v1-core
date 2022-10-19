@@ -48,6 +48,11 @@ interface ISHProduct {
         uint256 _amount
     );
 
+    event RedeemOptionPayout(
+        address _from,
+        uint256 _amount
+    );
+
     function maxCapacity() external view returns (uint256);
 
     function shNFT() external view returns (address);

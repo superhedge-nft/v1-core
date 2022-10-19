@@ -84,7 +84,7 @@ contract SHFactory is Ownable {
         address _product,
         ISHProduct.IssuanceCycle memory _issuanceCycle
     ) internal {
-
+        require(isProduct[_product], "Product does not exist");
         address shNFT = ISHProduct(_product).shNFT();
         ISHNFT(shNFT).tokenIdIncrement();
         uint256 tokenId = ISHNFT(shNFT).currentTokenID();
