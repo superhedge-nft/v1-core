@@ -80,6 +80,13 @@ contract SHFactory is Ownable {
         _setIssuanceCycle(_product, _issuanceCycle);
     }
 
+    /**
+     * @notice returns the number of products
+     */
+    function numOfProducts() external view returns (uint256) {
+        return products.length;
+    }
+
     function _setIssuanceCycle(
         address _product,
         ISHProduct.IssuanceCycle memory _issuanceCycle
@@ -94,12 +101,5 @@ contract SHFactory is Ownable {
             _issuanceCycle.strikePrice2,
             _issuanceCycle.uri
         );
-    }
-
-    /**
-     * @notice returns the number of products
-     */
-    function numOfProducts() external view returns (uint256) {
-        return products.length;
     }
 }

@@ -37,6 +37,24 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     
     mapping(address => UserInfo) public userInfo;
     address[] public investors;
+
+    constructor(
+        string memory _name,
+        string memory _underlying,
+        address _qredo_deribit,
+        address _shNFT,
+        uint256 _maxCapacity,
+        IssuanceCycle memory _issuanceCycle
+    ) {
+        name = _name;
+        underlying = _underlying;
+
+        qredoDeribit = _qredo_deribit;
+        maxCapacity = _maxCapacity;
+
+        shNFT = _shNFT;
+        issuanceCycle = _issuanceCycle;
+    }
     
     /**
      * @dev Throws if called by any account other than the keeper.
@@ -56,29 +74,12 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         _;
     }
 
-    constructor(
-        string memory _name,
-        string memory _underlying,
-        address _qredo_deribit,
-        address _shNFT,
-        uint256 _maxCapacity,
-        IssuanceCycle memory _issuanceCycle
-    ) {
-        name = _name;
-        underlying = _underlying;
-
-        qredoDeribit = _qredo_deribit;
-        maxCapacity = _maxCapacity;
-
-        shNFT = _shNFT;
-        issuanceCycle = _issuanceCycle;
-    }
-
     function fundAccept() external onlyOps {
         status = Status.Accepted;
         currentCapacity = 0;
-        ISHNFT(shNFT).tokenIdIncrement();
         prevTokenId = currentTokenId;
+
+        ISHNFT(shNFT).tokenIdIncrement();
         currentTokenId = ISHNFT(shNFT).currentTokenID();
     }
 
@@ -91,14 +92,14 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         // issuanceCycle.issuanceDate = block.timestamp;
         // burn the token of the expired issuance
         for (uint256 i = 0; i < investors.length; i++) {
-            uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
-            if (tokenSupply == 0 && userInfo[investors[i]].coupon == 0 && userInfo[investors[i]].optionPayout == 0) {
-                investors.remove(i);
-            }
             uint256 prevSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
             if (prevSupply > 0) {
                 ISHNFT(shNFT).burn(msg.sender, prevTokenId, prevSupply);
                 ISHNFT(shNFT).mint(msg.sender, currentTokenId, prevSupply, issuanceCycle.uri);
+            }
+            uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
+            if (tokenSupply == 0 && userInfo[investors[i]].coupon == 0 && userInfo[investors[i]].optionPayout == 0) {
+                investors.remove(i);
             }
         }
     }
@@ -198,10 +199,10 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Returns the product's total balance
+     * @notice returns the number of investors
      */
-    function totalBalance() public view returns (uint256) {
-        return IERC20(USDC).balanceOf(address(this));
+    function numOfInvestors() external view returns (uint256) {
+        return investors.length;
     }
 
     function principalBalance() external view returns (uint256) {
@@ -215,6 +216,13 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
 
     function optionBalance() external view returns (uint256) {
         return userInfo[msg.sender].optionPayout;
+    }
+
+    /**
+     * @notice Returns the product's total balance
+     */
+    function totalBalance() public view returns (uint256) {
+        return IERC20(USDC).balanceOf(address(this));
     }
 
     function _underlyingDecimals() internal view returns (uint256) {
