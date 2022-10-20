@@ -18,9 +18,9 @@ contract SHFactory is Ownable {
     address[] public products;
 
     event ProductCreated(
+        address indexed product,
         string name, 
         string underlying,
-        address indexed product,
         uint256 maxSupply
     );
 
@@ -70,7 +70,7 @@ contract SHFactory is Ownable {
         ISHNFT(_shNFT).addMinter(productAddr);
         _setIssuanceCycle(productAddr, _issuanceCycle);
         
-        emit ProductCreated(_name, _underlying, productAddr, _maxCapacity);
+        emit ProductCreated(productAddr, _name, _underlying, _maxCapacity);
     }
 
     function setIssuanceCycle(
@@ -85,11 +85,6 @@ contract SHFactory is Ownable {
         ISHProduct.IssuanceCycle memory _issuanceCycle
     ) internal {
         require(isProduct[_product], "Product does not exist");
-        address shNFT = ISHProduct(_product).shNFT();
-        ISHNFT(shNFT).tokenIdIncrement();
-        uint256 tokenId = ISHNFT(shNFT).currentTokenID();
-
-        ISHProduct(_product).setCurrentTokenId(tokenId);
         ISHProduct(_product).setIssuanceCycle(_issuanceCycle);
 
         emit IssuanceCycleSet(

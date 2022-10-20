@@ -117,7 +117,7 @@ contract SHNFT is ERC1155, AccessControl {
     /**
      * @dev Increase token ID every issuance cycle
      */
-    function tokenIdIncrement() external onlyRole(ADMIN_ROLE) {
+    function tokenIdIncrement() external onlyRole(MINTER_ROLE) {
         tokenIds.increment();
     }
 

@@ -7,20 +7,20 @@ import "../interfaces/ISHProduct.sol";
 import "./MockProduct.sol";
 
 /**
- * @notice factory contract to create new products(vaults)
+ * @notice factory contract to create new products
  */
-contract MockFactory is Ownable {
+contract SHFactory is Ownable {
     /// @notice mapping from product name to product address 
     mapping(string => address) public getProduct;
-    /// @notice Boolean check for if an address is a product
+    /// @notice Boolean check if an address is a product
     mapping(address => bool) public isProduct;
     /// @notice array of products' addresses
     address[] public products;
 
     event ProductCreated(
+        address indexed product,
         string name, 
         string underlying,
-        address indexed product,
         uint256 maxSupply
     );
 
@@ -70,7 +70,7 @@ contract MockFactory is Ownable {
         ISHNFT(_shNFT).addMinter(productAddr);
         _setIssuanceCycle(productAddr, _issuanceCycle);
         
-        emit ProductCreated(_name, _underlying, productAddr, _maxCapacity);
+        emit ProductCreated(productAddr, _name, _underlying, _maxCapacity);
     }
 
     function setIssuanceCycle(
@@ -84,12 +84,7 @@ contract MockFactory is Ownable {
         address _product,
         ISHProduct.IssuanceCycle memory _issuanceCycle
     ) internal {
-
-        address shNFT = ISHProduct(_product).shNFT();
-        ISHNFT(shNFT).tokenIdIncrement();
-        uint256 tokenId = ISHNFT(shNFT).currentTokenID();
-
-        ISHProduct(_product).setCurrentTokenId(tokenId);
+        require(isProduct[_product], "Product does not exist");
         ISHProduct(_product).setIssuanceCycle(_issuanceCycle);
 
         emit IssuanceCycleSet(

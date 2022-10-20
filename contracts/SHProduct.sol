@@ -24,10 +24,12 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     address public qredoDeribit;
 
     uint256 public maxCapacity;
-    uint256 public currentTokenId;
     uint256 public currentCapacity;
     uint256 optionProfit;
     
+    uint256 public currentTokenId;
+    uint256 public prevTokenId;
+
     Status public status;
     IssuanceCycle public issuanceCycle;
 
@@ -75,6 +77,9 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     function fundAccept() external onlyOps {
         status = Status.Accepted;
         currentCapacity = 0;
+        ISHNFT(shNFT).tokenIdIncrement();
+        prevTokenId = currentTokenId;
+        currentTokenId = ISHNFT(shNFT).currentTokenID();
     }
 
     function fundLock() external onlyOps {
@@ -90,7 +95,6 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
             if (tokenSupply == 0 && userInfo[investors[i]].coupon == 0 && userInfo[investors[i]].optionPayout == 0) {
                 investors.remove(i);
             }
-            uint256 prevTokenId = currentTokenId - 1;
             uint256 prevSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
             if (prevSupply > 0) {
                 ISHNFT(shNFT).burn(msg.sender, prevTokenId, prevSupply);
@@ -125,10 +129,6 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
                 userInfo[investors[i]].coupon += _calcCoupon(tokenSupply);
             }
         }
-    }
-
-    function setCurrentTokenId(uint256 _id) external {
-        currentTokenId = _id;
     }
 
     function setIssuanceCycle(

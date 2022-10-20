@@ -25,31 +25,31 @@ interface ISHProduct {
     }
 
     event Deposit(
-        address _from,
+        address indexed _from,
         uint256 _amount,
         uint256 _currentTokenId,
         uint256 _supply
     );
 
     event WithdrawPrincipal(
-        address _to,
+        address indexed _to,
         uint256 _amount,
         uint256 _currentTokenId,
         uint256 _amountToBurn
     );
 
     event WithdrawCoupon(
-        address _to,
+        address indexed _to,
         uint256 _amount
     );
 
     event WithdrawOption(
-        address _to,
+        address indexed _to,
         uint256 _amount
     );
 
     event RedeemOptionPayout(
-        address _from,
+        address indexed _from,
         uint256 _amount
     );
 
@@ -60,6 +60,4 @@ interface ISHProduct {
     function setIssuanceCycle(IssuanceCycle calldata _issuanceCycle) external;
 
     function deposit(uint256 _amount) external;
-
-    function setCurrentTokenId(uint256 _id) external;
 }
