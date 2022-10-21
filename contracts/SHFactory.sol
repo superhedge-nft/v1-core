@@ -7,16 +7,17 @@ import "./interfaces/ISHProduct.sol";
 import "./SHProduct.sol";
 
 /**
- * @notice factory contract to create new products
+ * @notice Factory contract to create new products
  */
 contract SHFactory is Ownable {
-    /// @notice mapping from product name to product address 
+    /// @notice Mapping from product name to product address 
     mapping(string => address) public getProduct;
     /// @notice Boolean check if an address is a product
     mapping(address => bool) public isProduct;
-    /// @notice array of products' addresses
+    /// @notice Array of products' addresses
     address[] public products;
 
+    /// @notice Event emitted when new product is created
     event ProductCreated(
         address indexed product,
         string name, 
@@ -24,6 +25,7 @@ contract SHFactory is Ownable {
         uint256 maxSupply
     );
 
+    /// @notice Event emitted when new issuance cycle is set
     event IssuanceCycleSet(
         address indexed product,
         uint256 coupon,
@@ -33,7 +35,7 @@ contract SHFactory is Ownable {
     );
 
     /**
-     * @notice function to create new product(vault)
+     * @notice Function to create new product(vault)
      * @param _name is the product name
      * @param _underlying is the underlying asset label
      * @param _qredo_deribit is the wallet address of Deribit trading platform
@@ -73,6 +75,9 @@ contract SHFactory is Ownable {
         emit ProductCreated(productAddr, _name, _underlying, _maxCapacity);
     }
 
+    /**
+     * @notice Set new issuance cycle by owner
+     */
     function setIssuanceCycle(
         address _product, 
         ISHProduct.IssuanceCycle calldata _issuanceCycle
@@ -87,6 +92,9 @@ contract SHFactory is Ownable {
         return products.length;
     }
 
+    /**
+     * @notice Internal function to set issuance cycle
+     */
     function _setIssuanceCycle(
         address _product,
         ISHProduct.IssuanceCycle memory _issuanceCycle
