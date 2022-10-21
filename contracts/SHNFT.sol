@@ -5,9 +5,12 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+/**
+ * @notice NFT Contract relevant to product issuance, inherting ERC1155 standard contract
+ */
 contract SHNFT is ERC1155, AccessControl {
     using Counters for Counters.Counter;
-    /// @notice token ID, starts in 1
+    /// @notice Token ID, starts in 1
     Counters.Counter private tokenIds;
 
     /// @notice Contract name
@@ -17,19 +20,30 @@ contract SHNFT is ERC1155, AccessControl {
 
     /// @notice Optional mapping for token URIs
     mapping(uint256 => string) private _tokenURIs;
-    /// @notice mapping from token ID to owner address
+    /// @notice Mapping from token ID to owner address
     mapping(uint256 => address) public creators;
-    /// @notice mapping from token ID to supply
+    /// @notice Mapping from token ID to supply
     mapping(uint256 => uint256) public tokenSupply;
 
+    /// @notice Owner role for contract deployer
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+    /// @notice Admin role to assign minter roles
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    /// @notice Minter role to mint & burn tokens, and increase token ID
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+    /// @notice Event emitted when new token is minted
     event Mint(address _to, uint256 _id, uint256 _amount, string _uri);
 
+    /// @notice Event emitted when new token is burned
     event Burn(address _from, uint256 _id, uint256 _amount);
 
+    /**
+     * @dev Initialize the name & symbol of token, and the address of factory contract
+     * @param _name Token name
+     * @param _symbol Token symbol
+     * @param _factory Address of factory contract
+     */
     constructor(
         string memory _name, 
         string memory _symbol,
