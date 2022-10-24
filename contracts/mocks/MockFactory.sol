@@ -9,7 +9,7 @@ import "./MockProduct.sol";
 /**
  * @notice Factory contract to create new products
  */
-contract SHFactory is Ownable {
+contract MockFactory is Ownable {
     /// @notice Mapping from product name to product address 
     mapping(string => address) public getProduct;
     /// @notice Boolean check if an address is a product

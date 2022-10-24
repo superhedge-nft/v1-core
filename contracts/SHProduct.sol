@@ -74,6 +74,11 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         _;
     }
 
+    modifier onlyDeribit() {
+        require(msg.sender == qredoDeribit, "Not a deribit wallet");
+        _;
+    }
+
     function fundAccept() external onlyOps {
         status = Status.Accepted;
         currentCapacity = 0;
@@ -116,13 +121,19 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         }
     }
 
-    function redeemOptionPayout(uint256 _optionProfit) external {
+    /**
+     * @dev Transfers option profit from a deribit wallet, called by an owner
+     */
+    function redeemOptionPayout(uint256 _optionProfit) external onlyDeribit {
         IERC20(USDC).safeTransferFrom(msg.sender, address(this), _optionProfit);
         optionProfit = _optionProfit;
 
         emit RedeemOptionPayout(msg.sender, _optionProfit);
     }
 
+    /**
+     * @dev Update users' coupon balance every week
+     */
     function weeklyCoupon() external onlyOps {
         for (uint256 i = 0; i < investors.length; i++) {
             uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
@@ -132,6 +143,9 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         }
     }
 
+    /**
+     * @dev Set new issuance cycle, called by a factory contract.
+     */
     function setIssuanceCycle(
         IssuanceCycle calldata _issuanceCycle
     ) external onlyOwner notIssued {
@@ -165,21 +179,24 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
      * @dev Withdraws the principal from the structured product
      */
     function withdrawPrincipal() external nonReentrant onlyAccepted {
-        uint256 tokenSupply = ISHNFT(shNFT).balanceOf(msg.sender, currentTokenId);
+        uint256 tokenSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
         require(tokenSupply > 0, "No principal");
         uint256 principal = tokenSupply * 1000 * (10 ** _underlyingDecimals());
         require(totalBalance() >= principal, "Insufficient balance");
         
         IERC20(USDC).safeTransfer(msg.sender, principal);
-        ISHNFT(shNFT).burn(msg.sender, currentTokenId, tokenSupply);
+        ISHNFT(shNFT).burn(msg.sender, prevTokenId, tokenSupply);
         
         if (userInfo[msg.sender].coupon == 0 && userInfo[msg.sender].optionPayout == 0) {
             delete userInfo[msg.sender];
         }
 
-        emit WithdrawPrincipal(msg.sender, principal, currentTokenId, tokenSupply);
+        emit WithdrawPrincipal(msg.sender, principal, prevTokenId, tokenSupply);
     }
 
+    /**
+     * @notice Withdraws user's coupon payout
+     */
     function withdrawCoupon() external nonReentrant onlyAccepted {
         require(totalBalance() >= userInfo[msg.sender].coupon,
             "Insufficient balance");
@@ -189,6 +206,9 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         }
     }
 
+    /**
+     * @notice Withdraws user's option payout
+     */
     function withdrawOption() external nonReentrant onlyAccepted {
         require(totalBalance() >= userInfo[msg.sender].optionPayout,
             "Insufficient balance");
@@ -199,36 +219,54 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice returns the number of investors
+     * @notice Returns the number of investors
      */
     function numOfInvestors() external view returns (uint256) {
         return investors.length;
     }
 
+    /**
+     * @notice Returns the user's principal balance
+     * Before auto-rolling or fund lock, users can have both tokens so total supply is the sum of 
+     * previous supply and current supply
+     */
     function principalBalance() external view returns (uint256) {
+        uint256 prevSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
         uint256 tokenSupply = ISHNFT(shNFT).balanceOf(msg.sender, currentTokenId);
-        return tokenSupply * 1000 * (10 ** _underlyingDecimals());
+        return (prevSupply + tokenSupply) * 1000 * (10 ** _underlyingDecimals());
     }
 
+    /**
+     * @notice Returns the user's coupon payout
+     */
     function couponBalance() external view returns (uint256) {
         return userInfo[msg.sender].coupon;
     }
 
+    /**
+     * @notice Returns the user's option payout
+     */
     function optionBalance() external view returns (uint256) {
         return userInfo[msg.sender].optionPayout;
     }
 
     /**
-     * @notice Returns the product's total balance
+     * @notice Returns the product's total USDC balance
      */
     function totalBalance() public view returns (uint256) {
         return IERC20(USDC).balanceOf(address(this));
     }
 
+    /**
+     * @notice Returns the decimal of underlying asset (USDC)
+     */
     function _underlyingDecimals() internal view returns (uint256) {
         return IUSDC(USDC).decimals();
     }
 
+    /**
+     * @notice Calculates the coupon payout based on current token supply
+     */
     function _calcCoupon(uint256 _tokenSupply) internal view returns (uint256) {
         return _tokenSupply * 1000 * (10 ** _underlyingDecimals()) * issuanceCycle.coupon / 10000;
     }
