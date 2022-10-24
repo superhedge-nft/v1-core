@@ -26,6 +26,12 @@ describe("SHFactory test suite", function () {
 
   describe("Create product", () => {
     const productName = "BTC Defensive Spread";
+    const issuanceCycle = {
+      coupon: 10,
+      strikePrice1: 25000,
+      strikePrice2: 20000,
+      uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
+    }
     it("Reverts if max capacity is not whole-number thousands", async () => {
       await expect(
         shFactory.createProduct(
@@ -34,12 +40,7 @@ describe("SHFactory test suite", function () {
           qredoDeribit.address,
           shNFT.address,
           2500,
-          {
-            coupon: 10,
-            strikePrice1: 25000,
-            strikePrice2: 20000,
-            uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
-          }
+          issuanceCycle
         )
       ).to.be.revertedWith("Max capacity must be whole-number thousands");
     });
@@ -51,12 +52,7 @@ describe("SHFactory test suite", function () {
         qredoDeribit.address,
         shNFT.address,
         1000000,
-        {
-          coupon: 10, // 0.10% in basis points
-          strikePrice1: 25000,
-          strikePrice2: 20000,
-          uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH",
-        }
+        issuanceCycle
       )).to.be.emit(shFactory, "ProductCreated");
   
       expect(await shFactory.numOfProducts()).to.equal(1);
@@ -66,7 +62,7 @@ describe("SHFactory test suite", function () {
       const MockProduct = await ethers.getContractFactory("MockProduct");
       shProduct = MockProduct.attach(productAddr);
   
-      expect(await shProduct.currentTokenId()).to.equal(1);
+      expect(await shProduct.currentTokenId()).to.equal(0);
       expect(await shProduct.shNFT()).to.equal(shNFT.address);
     });
   });
