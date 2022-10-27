@@ -103,20 +103,22 @@ describe("SHFactory test suite", function () {
       const supply = 2000 / 1000;
       await mockUSDC.connect(user1).approve(shProduct.address, amount);
 
+      const currentTokenID = await shProduct.currentTokenId();
+      
       expect(
         await shProduct.connect(user1).deposit(amount)
-      ).to.be.emit(shProduct, "Deposit").withArgs(user1.address, amount, 1, supply);
+      ).to.be.emit(shProduct, "Deposit").withArgs(user1.address, amount, currentTokenID, supply);
 
       expect(
         await mockUSDC.balanceOf(shProduct.address)
       ).to.equal(amount);
 
-      const currentTokenID = await shProduct.currentTokenId();
       expect(
         await shNFT.balanceOf(user1.address, currentTokenID)
       ).to.equal(2);
 
       expect(await shProduct.currentCapacity()).to.equal(amount);
+      expect(await shProduct.numOfInvestors()).to.equal(1);
     });
 
     it("set token URI", async () => {
@@ -125,11 +127,8 @@ describe("SHFactory test suite", function () {
       await shNFT.setTokenURI(tokenId, URI);
     });
 
-    it("Lock funds", async () => {
-      await shProduct.connect(mockOps).fundLock();
-    });
-
     it("User2 deposits 1000 USDC but it is reverted since fund is locked", async () => {
+      await shProduct.connect(mockOps).fundLock();
       const amount2 = parseUnits("1000", 6);
       await expect(
         shProduct.connect(user2).deposit(amount2)
@@ -138,7 +137,11 @@ describe("SHFactory test suite", function () {
   });
 
   describe("Check coupon & option payout balance", () => {
-    it("Check coupon balance", async () => {
+    before(async() => {
+      await shProduct.connect(mockOps).issuance();
+    });
+
+    it("Check coupon balance after one week", async () => {
       await shProduct.connect(mockOps).weeklyCoupon();
       const userInfo = await shProduct.userInfo(user1.address);
       const currentTokenID = await shProduct.currentTokenId();
@@ -149,6 +152,10 @@ describe("SHFactory test suite", function () {
   });
 
   describe("Withdraw", () => {
+    before(async() => {
+      await shProduct.connect(mockOps).mature();
+    });
+
     it("Reverts if the product status is not 'Accepted'", async() => {
       await expect(
         shProduct.connect(user1).withdrawPrincipal()
@@ -157,15 +164,19 @@ describe("SHFactory test suite", function () {
 
     it("Withdraw principal", async () => {
       await shProduct.connect(mockOps).fundAccept();
+      const prevTokenID = await shProduct.prevTokenId();
+      const tokenSupply = parseInt(await shNFT.balanceOf(user1.address, prevTokenID));
+      const principal = tokenSupply * 1000 * Math.pow(10, 6);
+      
       expect(
         await shProduct.connect(user1).withdrawPrincipal()
-      ).to.be.emit(shProduct, "WithdrawPrincipal");
+      ).to.be.emit(shProduct, "WithdrawPrincipal").withArgs(user1.address, principal, prevTokenID, tokenSupply);
     });
 
-    it("Withdraw coupon", async () => {
+    it("Withdraw coupon, but should revert since there is no enough balance", async () => {
       await expect(
         shProduct.connect(user1).withdrawCoupon()
-      ).to.be.reverted;
+      ).to.be.revertedWith("Insufficient balance");
     });
 
     it("Withdraw option payout", async() => {
@@ -186,7 +197,7 @@ describe("SHFactory test suite", function () {
       await expect(shFactory.setIssuanceCycle(
         shProduct.address,
         newIssuanceCycle
-      )).to.be.revertedWith("Issued status");
+      )).to.be.revertedWith("Already issued status");
     });
 
     it("set successfully", async () => {
