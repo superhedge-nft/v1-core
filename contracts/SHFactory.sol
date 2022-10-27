@@ -31,6 +31,8 @@ contract SHFactory is Ownable {
         uint256 coupon,
         uint256 strikePrice1,
         uint256 strikePrice2,
+        uint256 strikePrice3,
+        uint256 strikePrice4,
         string uri
     );
 
@@ -107,6 +109,8 @@ contract SHFactory is Ownable {
             _issuanceCycle.coupon, 
             _issuanceCycle.strikePrice1, 
             _issuanceCycle.strikePrice2,
+            _issuanceCycle.strikePrice3,
+            _issuanceCycle.strikePrice4,
             _issuanceCycle.uri
         );
     }

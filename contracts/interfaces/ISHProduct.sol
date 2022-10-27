@@ -12,6 +12,8 @@ interface ISHProduct {
         uint256 coupon;
         uint256 strikePrice1;
         uint256 strikePrice2;
+        uint256 strikePrice3;
+        uint256 strikePrice4;
         string uri;
     }
 
