@@ -69,8 +69,8 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
         _;
     }
 
-    modifier notIssued() {
-        require(status != Status.Issued, "Issued status");
+    modifier onlyIssued() {
+        require(status == Status.Issued, "Not issued status");
         _;
     }
 
@@ -134,7 +134,7 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
     /**
      * @dev Update users' coupon balance every week
      */
-    function weeklyCoupon() external onlyOps {
+    function weeklyCoupon() external onlyIssued onlyOps {
         for (uint256 i = 0; i < investors.length; i++) {
             uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
             if (tokenSupply > 0) {
@@ -148,7 +148,8 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
      */
     function setIssuanceCycle(
         IssuanceCycle calldata _issuanceCycle
-    ) external onlyOwner notIssued {
+    ) external onlyOwner {
+        require(status != Status.Issued, "Already issued status");
         issuanceCycle = _issuanceCycle;
     }
     
@@ -169,7 +170,7 @@ contract MockProduct is ISHProduct, Ownable, ReentrancyGuard {
         IERC20(USDC).safeTransferFrom(msg.sender, address(this), _amount);
 
         ISHNFT(shNFT).mint(msg.sender, currentTokenId, supply, issuanceCycle.uri);
-        // userInfo[msg.sender].principal += _amount;
+        
         investors.push(msg.sender);
 
         emit Deposit(msg.sender, _amount, currentTokenId, supply);
