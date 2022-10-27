@@ -80,6 +80,15 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     }
 
     function fundAccept() external onlyOps {
+        // First, distribute option profit to the token holders.
+        uint256 totalSupply = ISHNFT(shNFT).totalSupply(currentTokenId);
+        if (optionProfit > 0) {
+            for (uint256 i = 0; i < investors.length; i++) {
+                uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
+                userInfo[msg.sender].optionPayout += tokenSupply * optionProfit / totalSupply;
+            }
+        }
+        // Then update status
         status = Status.Accepted;
         currentCapacity = 0;
         prevTokenId = currentTokenId;
@@ -93,6 +102,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     }
 
     function issuance() external onlyOps {
+        require(status == Status.Locked, "Fund is not locked");
         status = Status.Issued;
         // issuanceCycle.issuanceDate = block.timestamp;
         // burn the token of the expired issuance
@@ -109,22 +119,16 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         }
     }
 
-    function mature() external onlyOps {
+    function mature() external onlyOps onlyIssued {
         status = Status.Mature;
         // issuanceCycle.maturityDate = block.timestamp;
-        uint256 totalSupply = ISHNFT(shNFT).totalSupply(currentTokenId);
-        if (optionProfit > 0) {
-            for (uint256 i = 0; i < investors.length; i++) {
-                uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
-                userInfo[msg.sender].optionPayout += tokenSupply * optionProfit / totalSupply;
-            }
-        }
     }
 
     /**
      * @dev Transfers option profit from a deribit wallet, called by an owner
      */
     function redeemOptionPayout(uint256 _optionProfit) external onlyDeribit {
+        require(status == Status.Mature, "Not expired yet");
         IERC20(USDC).safeTransferFrom(msg.sender, address(this), _optionProfit);
         optionProfit = _optionProfit;
 
@@ -134,7 +138,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     /**
      * @dev Update users' coupon balance every week
      */
-    function weeklyCoupon() external onlyIssued onlyOps {
+    function weeklyCoupon() external onlyOps onlyIssued {
         for (uint256 i = 0; i < investors.length; i++) {
             uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
             if (tokenSupply > 0) {
