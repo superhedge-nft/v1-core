@@ -30,6 +30,8 @@ describe("SHFactory test suite", function () {
       coupon: 10,
       strikePrice1: 25000,
       strikePrice2: 20000,
+      strikePrice3: 0,
+      strikePrice4: 0,
       uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
     }
     it("Reverts if max capacity is not whole-number thousands", async () => {
@@ -189,10 +191,13 @@ describe("SHFactory test suite", function () {
       coupon: 20, // 0.20% in basis points
       strikePrice1: 20000,
       strikePrice2: 18000,
+      strikePrice3: 0,
+      strikePrice4: 0,
       uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH",
     };
 
     it("Reverts if the product status is already 'issued'", async () => {
+      await shProduct.connect(mockOps).fundLock();
       await shProduct.connect(mockOps).issuance();
       await expect(shFactory.setIssuanceCycle(
         shProduct.address,
