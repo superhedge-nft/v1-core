@@ -5,6 +5,7 @@ import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contra
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
+import "./interfaces/IPoolMaster.sol";
 
 contract DistributionExecutable is AxelarExecutable {
     IAxelarGasService public immutable gasReceiver;
@@ -13,17 +14,19 @@ contract DistributionExecutable is AxelarExecutable {
         gasReceiver = IAxelarGasService(gasReceiver_);
     }
 
-    function sendToken(
+    function sendAssetToPools(
         string memory destinationChain,
         string memory destinationAddress,
-        address[] calldata recipients,
+        address[] calldata pools,
+        uint256[] calldata percents,
         string memory symbol,
         uint256 amount
     ) external payable {
+        require(pools.length == percents.length, "Pools array should have same length as percents");
         address tokenAddress = gateway.tokenAddresses(symbol);
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), amount);
         IERC20(tokenAddress).approve(address(gateway), amount);
-        bytes memory payload = abi.encode(recipients);
+        bytes memory payload = abi.encode(pools, percents);
         if (msg.value > 0) {
             gasReceiver.payNativeGasForContractCallWithToken{ value: msg.value }(
                 address(this),
@@ -45,12 +48,16 @@ contract DistributionExecutable is AxelarExecutable {
         string calldata tokenSymbol,
         uint256 amount
     ) internal override {
-        address[] memory recipients = abi.decode(payload, (address[]));
+        address[] memory pools;
+        uint256[] memory percents;
+
+        (pools, percents) = abi.decode(payload, (address[], uint256[]));
         address tokenAddress = gateway.tokenAddresses(tokenSymbol);
 
-        uint256 sentAmount = amount / recipients.length;
-        for (uint256 i = 0; i < recipients.length; i++) {
-            IERC20(tokenAddress).transfer(recipients[i], sentAmount);
+        // swap from axlUSDC to USDC via any available dex(f.g. curve) on polygon
+        for (uint256 i = 0; i < pools.length; i++) {
+            uint256 lendAmount = amount * percents[i] / 100;
+            IPoolMaster(pools[i]).provide(lendAmount);
         }
     }
 }
