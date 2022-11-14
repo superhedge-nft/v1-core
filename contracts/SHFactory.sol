@@ -42,7 +42,7 @@ contract SHFactory is OwnableUpgradeable {
     function initialize() public initializer {
         __Ownable_init();
     }
-    
+
     /**
      * @notice Function to create new product(vault)
      * @param _name is the product name
@@ -65,14 +65,16 @@ contract SHFactory is OwnableUpgradeable {
 
         bytes32 salt = keccak256(abi.encodePacked(_name));
         // create new product contract
-        address productAddr = address(new SHProduct{salt:salt}(
-            _name,
-            _underlying,
-            _qredo_deribit,
-            _shNFT,
-            _maxCapacity,
+        SHProduct product = new SHProduct{salt:salt}();
+        product.initialize(
+            _name, 
+            _underlying, 
+            _qredo_deribit, 
+            _shNFT, 
+            _maxCapacity, 
             _issuanceCycle
-        ));
+        );
+        address productAddr = address(product);
 
         getProduct[_name] = productAddr;
         isProduct[productAddr] = true;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../interfaces/ISHNFT.sol";
 import "../interfaces/ISHProduct.sol";
 import "./MockProduct.sol";
@@ -9,7 +9,7 @@ import "./MockProduct.sol";
 /**
  * @notice Factory contract to create new products
  */
-contract MockFactory is Ownable {
+contract MockFactory is OwnableUpgradeable {
     /// @notice Mapping from product name to product address 
     mapping(string => address) public getProduct;
     /// @notice Boolean check if an address is a product
@@ -31,8 +31,17 @@ contract MockFactory is Ownable {
         uint256 coupon,
         uint256 strikePrice1,
         uint256 strikePrice2,
+        uint256 strikePrice3,
+        uint256 strikePrice4,
         string uri
     );
+
+    /**
+     * @dev Initializes the contract setting the deployer as the initial owner.
+     */
+    function initialize() public initializer {
+        __Ownable_init();
+    }
 
     /**
      * @notice Function to create new product(vault)
@@ -56,14 +65,16 @@ contract MockFactory is Ownable {
 
         bytes32 salt = keccak256(abi.encodePacked(_name));
         // create new product contract
-        address productAddr = address(new MockProduct{salt:salt}(
-            _name,
-            _underlying,
-            _qredo_deribit,
-            _shNFT,
-            _maxCapacity,
+        MockProduct product = new MockProduct{salt:salt}();
+        product.initialize(
+            _name, 
+            _underlying, 
+            _qredo_deribit, 
+            _shNFT, 
+            _maxCapacity, 
             _issuanceCycle
-        ));
+        );
+        address productAddr = address(product);
 
         getProduct[_name] = productAddr;
         isProduct[productAddr] = true;
@@ -86,7 +97,7 @@ contract MockFactory is Ownable {
     }
 
     /**
-     * @notice Returns the number of products
+     * @notice returns the number of products
      */
     function numOfProducts() external view returns (uint256) {
         return products.length;
@@ -107,6 +118,8 @@ contract MockFactory is Ownable {
             _issuanceCycle.coupon, 
             _issuanceCycle.strikePrice1, 
             _issuanceCycle.strikePrice2,
+            _issuanceCycle.strikePrice3,
+            _issuanceCycle.strikePrice4,
             _issuanceCycle.uri
         );
     }

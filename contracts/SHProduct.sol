@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHNFT.sol";
 import "./interfaces/IUSDC.sol";
 import "./SHNFT.sol";
 import "./libraries/Array.sol";
 
-contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
-    using SafeERC20 for IERC20;
+contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
     using Array for address[];
 
     string public name;
@@ -38,14 +38,17 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
     mapping(address => UserInfo) public userInfo;
     address[] public investors;
 
-    constructor(
+    function initialize(
         string memory _name,
         string memory _underlying,
         address _qredo_deribit,
         address _shNFT,
         uint256 _maxCapacity,
         IssuanceCycle memory _issuanceCycle
-    ) {
+    ) public initializer {
+        __Ownable_init();
+        __ReentrancyGuard_init();
+
         name = _name;
         underlying = _underlying;
 
@@ -129,7 +132,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
      */
     function redeemOptionPayout(uint256 _optionProfit) external onlyDeribit {
         require(status == Status.Mature, "Not expired yet");
-        IERC20(USDC).safeTransferFrom(msg.sender, address(this), _optionProfit);
+        IERC20Upgradeable(USDC).safeTransferFrom(msg.sender, address(this), _optionProfit);
         optionProfit = _optionProfit;
 
         emit RedeemOptionPayout(msg.sender, _optionProfit);
@@ -171,7 +174,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         currentCapacity += _amount;
         require((maxCapacity * 10 ** decimals) >= currentCapacity, "Product is full");
 
-        IERC20(USDC).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20Upgradeable(USDC).safeTransferFrom(msg.sender, address(this), _amount);
         ISHNFT(shNFT).mint(msg.sender, currentTokenId, supply, issuanceCycle.uri);
 
         investors.push(msg.sender);
@@ -188,7 +191,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         uint256 principal = tokenSupply * 1000 * (10 ** _underlyingDecimals());
         require(totalBalance() >= principal, "Insufficient balance");
         
-        IERC20(USDC).safeTransfer(msg.sender, principal);
+        IERC20Upgradeable(USDC).safeTransfer(msg.sender, principal);
         ISHNFT(shNFT).burn(msg.sender, prevTokenId, tokenSupply);
         
         if (userInfo[msg.sender].coupon == 0 && userInfo[msg.sender].optionPayout == 0) {
@@ -205,7 +208,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         require(totalBalance() >= userInfo[msg.sender].coupon,
             "Insufficient balance");
         if (userInfo[msg.sender].coupon > 0) {
-            IERC20(USDC).safeTransfer(msg.sender, userInfo[msg.sender].coupon);
+            IERC20Upgradeable(USDC).safeTransfer(msg.sender, userInfo[msg.sender].coupon);
             emit WithdrawCoupon(msg.sender, userInfo[msg.sender].coupon);
         }
     }
@@ -217,7 +220,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
         require(totalBalance() >= userInfo[msg.sender].optionPayout,
             "Insufficient balance");
         if (userInfo[msg.sender].optionPayout > 0) {
-            IERC20(USDC).safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
+            IERC20Upgradeable(USDC).safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
             emit WithdrawCoupon(msg.sender, userInfo[msg.sender].optionPayout);
         }
     }
@@ -258,7 +261,7 @@ contract SHProduct is ISHProduct, Ownable, ReentrancyGuard {
      * @notice Returns the product's total USDC balance
      */
     function totalBalance() public view returns (uint256) {
-        return IERC20(USDC).balanceOf(address(this));
+        return IERC20Upgradeable(USDC).balanceOf(address(this));
     }
 
     /**
