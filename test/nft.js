@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 
 describe("SHNFT test suite", function () {
     let shFactory, shNFT;
@@ -7,13 +7,13 @@ describe("SHNFT test suite", function () {
     before(async() => {
         [owner, owner2] = await ethers.getSigners();
         const SHFactory = await ethers.getContractFactory("SHFactory");
-        shFactory = await SHFactory.deploy();
+        shFactory = await upgrades.deployProxy(SHFactory, []);
         await shFactory.deployed();
 
         const SHNFT = await ethers.getContractFactory("SHNFT");
-        shNFT = await SHNFT.deploy(
-        "Superhedge NFT", "SHN", shFactory.address
-        );
+        shNFT = await upgrades.deployProxy(SHNFT, [
+            "Superhedge NFT", "SHN", shFactory.address
+        ]);
         await shNFT.deployed();
     });
 

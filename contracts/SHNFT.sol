@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 
 /**
  * @notice NFT Contract relevant to product issuance, inherting ERC1155 standard contract
  */
-contract SHNFT is ERC1155, AccessControl {
-    using Counters for Counters.Counter;
+contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
+    using CountersUpgradeable for CountersUpgradeable.Counter;
     /// @notice Token ID, starts in 1
-    Counters.Counter private tokenIds;
+    CountersUpgradeable.Counter private tokenIds;
 
     /// @notice Contract name
     string public name;
@@ -44,11 +44,14 @@ contract SHNFT is ERC1155, AccessControl {
      * @param _symbol Token symbol
      * @param _factory Address of factory contract
      */
-    constructor(
+    function initialize(
         string memory _name, 
         string memory _symbol,
         address _factory
-    ) ERC1155("") {
+    ) public initializer {
+        __ERC1155_init("");
+        __AccessControl_init();
+
         name = _name;
         symbol = _symbol;
 
@@ -187,8 +190,8 @@ contract SHNFT is ERC1155, AccessControl {
         view
         virtual
         override(
-            AccessControl,
-            ERC1155
+            AccessControlUpgradeable,
+            ERC1155Upgradeable
         )
         returns (bool)
     {
