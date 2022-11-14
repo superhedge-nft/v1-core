@@ -4,11 +4,11 @@
 // You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 
 async function main() {
   const SHFactory = await ethers.getContractFactory("SHFactory");
-  const shFactory = await SHFactory.deploy();
+  const shFactory = await upgrades.deployProxy(SHFactory, []);
   await shFactory.deployed();
 
   console.log(`SHFactory contract deployed at ${shFactory.address}`);

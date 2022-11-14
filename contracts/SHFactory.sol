@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/ISHNFT.sol";
 import "./interfaces/ISHProduct.sol";
 import "./SHProduct.sol";
@@ -9,7 +9,7 @@ import "./SHProduct.sol";
 /**
  * @notice Factory contract to create new products
  */
-contract SHFactory is Ownable {
+contract SHFactory is OwnableUpgradeable {
     /// @notice Mapping from product name to product address 
     mapping(string => address) public getProduct;
     /// @notice Boolean check if an address is a product
@@ -36,6 +36,13 @@ contract SHFactory is Ownable {
         string uri
     );
 
+    /**
+     * @dev Initializes the contract setting the deployer as the initial owner.
+     */
+    function initialize() public initializer {
+        __Ownable_init();
+    }
+    
     /**
      * @notice Function to create new product(vault)
      * @param _name is the product name
