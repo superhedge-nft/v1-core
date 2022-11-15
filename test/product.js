@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 
 const { parseUnits } = ethers.utils;
 
@@ -10,13 +10,13 @@ describe("SHFactory test suite", function () {
     [owner, qredoDeribit, user1, user2, mockOps] = await ethers.getSigners();
 
     const MockFactory = await ethers.getContractFactory("MockFactory");
-    shFactory = await MockFactory.deploy();
+    shFactory = await upgrades.deployProxy(MockFactory, []);
     await shFactory.deployed();
 
     const SHNFT = await ethers.getContractFactory("SHNFT");
-    shNFT = await SHNFT.deploy(
+    shNFT = await upgrades.deployProxy(SHNFT, [
       "Superhedge NFT", "SHN", shFactory.address
-    );
+    ]);
     await shNFT.deployed();
 
     const MockUSDC = await ethers.getContractFactory("MockUSDC");
