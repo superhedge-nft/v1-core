@@ -14,11 +14,21 @@ module.exports = {
     },
   },
   networks: {
-    /* hardhat: {
+    hardhat: {
       forking: {
-        url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`
+        url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_POLYGON}`
       }
-    }, */
+    },
+    mumbai: {
+      url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_MUMBAI}`,
+      chainId: 80001,
+      accounts: [process.env.PRIVATE_KEY]
+    },
+    polygon: {
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_POLYGON}`,
+      chainId: 137,
+      accounts: [process.env.PRIVATE_KEY]
+    },
     moonbase: {
       url: `https://moonbase-alpha.blastapi.io/${process.env.BLAST_PROJECT_ID}`,
       chainId: 1287, // (hex: 0x507),
@@ -35,6 +45,6 @@ module.exports = {
     currency: "USD",
   },
   etherscan: {
-    apiKey: process.env.MOONSCAN_API_KEY,
+    apiKey: process.env.POLYGONSCAN_API_KEY,
   }
 };
