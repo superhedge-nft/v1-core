@@ -5,7 +5,7 @@ import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contra
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
-import "./interfaces/IPoolMaster.sol";
+import "./interfaces/clearpool/IPoolMaster.sol";
 
 contract DistributionExecutable is AxelarExecutable {
     IAxelarGasService public immutable gasReceiver;
