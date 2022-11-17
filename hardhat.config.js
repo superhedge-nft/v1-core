@@ -5,7 +5,7 @@ require("dotenv").config();
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
-    version: '0.8.9',
+    version: '0.8.14',
     settings: {
       optimizer: {
         enabled: true,
@@ -37,6 +37,11 @@ module.exports = {
     moonbeam: {
       url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`, // Insert your RPC URL here
       chainId: 1284, // (hex: 0x504),
+      accounts: [process.env.PRIVATE_KEY]
+    },
+    goerli: {
+      url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_GOERLI}`,
+      chainId: 5,
       accounts: [process.env.PRIVATE_KEY]
     }
   },
