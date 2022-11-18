@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity ^0.8.9;
 
 interface IPoolMaster {
     /// @notice Function is used to provide liquidity for Pool in exchange for cpTokens

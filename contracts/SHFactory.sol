@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/ISHNFT.sol";
 import "./interfaces/ISHProduct.sol";
@@ -10,12 +11,13 @@ import "./SHProduct.sol";
  * @notice Factory contract to create new products
  */
 contract SHFactory is OwnableUpgradeable {
+
+    /// @notice Array of products' addresses
+    address[] public products;
     /// @notice Mapping from product name to product address 
     mapping(string => address) public getProduct;
     /// @notice Boolean check if an address is a product
     mapping(address => bool) public isProduct;
-    /// @notice Array of products' addresses
-    address[] public products;
 
     /// @notice Event emitted when new product is created
     event ProductCreated(
@@ -47,6 +49,7 @@ contract SHFactory is OwnableUpgradeable {
      * @notice Function to create new product(vault)
      * @param _name is the product name
      * @param _underlying is the underlying asset label
+     * @param _currency principal asset, USDC address
      * @param _qredo_deribit is the wallet address of Deribit trading platform
      * @param _maxCapacity is the maximum USDC amount that this product can accept
      * @param _issuanceCycle is the struct variable with issuance date, 
@@ -55,22 +58,23 @@ contract SHFactory is OwnableUpgradeable {
     function createProduct(
         string calldata _name,
         string calldata _underlying,
-        address _qredo_deribit,
+        IERC20Upgradeable _currency,
         address _shNFT,
+        address _qredo_deribit,
         uint256 _maxCapacity,
         ISHProduct.IssuanceCycle calldata _issuanceCycle        
     ) external onlyOwner {
         require(getProduct[_name] == address(0), "Product already exists");
         require((_maxCapacity % 1000) == 0, "Max capacity must be whole-number thousands");
 
-        bytes32 salt = keccak256(abi.encodePacked(_name));
         // create new product contract
-        SHProduct product = new SHProduct{salt:salt}();
+        SHProduct product = new SHProduct();
         product.initialize(
             _name, 
             _underlying, 
-            _qredo_deribit, 
+            _currency,
             _shNFT, 
+            _qredo_deribit, 
             _maxCapacity, 
             _issuanceCycle
         );

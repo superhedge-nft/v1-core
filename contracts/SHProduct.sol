@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHNFT.sol";
 import "./interfaces/IUSDC.sol";
-import "./SHNFT.sol";
 import "./libraries/Array.sol";
 
 contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable {
@@ -18,31 +17,33 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     string public name;
     string public underlying;
 
-    address public constant USDC = 0x818ec0A7Fe18Ff94269904fCED6AE3DaE6d6dC0b;
+    address public shNFT;
+
     /// @notice role in charge of status transition automation: Gelato Ops
     address public constant ops = 0x6c3224f9b3feE000A444681d5D45e4532D5BA531;
     address public qredoDeribit;
 
     uint256 public maxCapacity;
     uint256 public currentCapacity;
-    uint256 optionProfit;
+    uint256 public optionProfit;
     
     uint256 public currentTokenId;
     uint256 public prevTokenId;
 
     Status public status;
     IssuanceCycle public issuanceCycle;
-
-    address public shNFT;
     
     mapping(address => UserInfo) public userInfo;
     address[] public investors;
 
+    IERC20Upgradeable public currency;
+
     function initialize(
         string memory _name,
         string memory _underlying,
-        address _qredo_deribit,
+        IERC20Upgradeable _currency,
         address _shNFT,
+        address _qredo_deribit,
         uint256 _maxCapacity,
         IssuanceCycle memory _issuanceCycle
     ) public initializer {
@@ -55,6 +56,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         qredoDeribit = _qredo_deribit;
         maxCapacity = _maxCapacity;
 
+        currency = _currency;
         shNFT = _shNFT;
         issuanceCycle = _issuanceCycle;
     }
@@ -132,7 +134,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
      */
     function redeemOptionPayout(uint256 _optionProfit) external onlyDeribit {
         require(status == Status.Mature, "Not expired yet");
-        IERC20Upgradeable(USDC).safeTransferFrom(msg.sender, address(this), _optionProfit);
+        IERC20Upgradeable(currency).safeTransferFrom(msg.sender, address(this), _optionProfit);
         optionProfit = _optionProfit;
 
         emit RedeemOptionPayout(msg.sender, _optionProfit);
@@ -166,7 +168,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
      */
     function deposit(uint256 _amount) external nonReentrant onlyAccepted {
         require(_amount > 0, "Amount must be greater than zero");
-        uint256 decimals = IUSDC(USDC).decimals();
+        uint256 decimals = _currencyDecimals();
         require((_amount % (1000 * 10 ** decimals)) == 0, "Amount must be whole-number thousands");
         
         uint256 supply = _amount / (1000 * 10 ** decimals);
@@ -174,7 +176,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         currentCapacity += _amount;
         require((maxCapacity * 10 ** decimals) >= currentCapacity, "Product is full");
 
-        IERC20Upgradeable(USDC).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20Upgradeable(currency).safeTransferFrom(msg.sender, address(this), _amount);
         ISHNFT(shNFT).mint(msg.sender, currentTokenId, supply, issuanceCycle.uri);
 
         investors.push(msg.sender);
@@ -188,10 +190,10 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     function withdrawPrincipal() external nonReentrant onlyAccepted {
         uint256 tokenSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
         require(tokenSupply > 0, "No principal");
-        uint256 principal = tokenSupply * 1000 * (10 ** _underlyingDecimals());
+        uint256 principal = tokenSupply * 1000 * (10 ** _currencyDecimals());
         require(totalBalance() >= principal, "Insufficient balance");
         
-        IERC20Upgradeable(USDC).safeTransfer(msg.sender, principal);
+        IERC20Upgradeable(currency).safeTransfer(msg.sender, principal);
         ISHNFT(shNFT).burn(msg.sender, prevTokenId, tokenSupply);
         
         if (userInfo[msg.sender].coupon == 0 && userInfo[msg.sender].optionPayout == 0) {
@@ -208,7 +210,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         require(totalBalance() >= userInfo[msg.sender].coupon,
             "Insufficient balance");
         if (userInfo[msg.sender].coupon > 0) {
-            IERC20Upgradeable(USDC).safeTransfer(msg.sender, userInfo[msg.sender].coupon);
+            IERC20Upgradeable(currency).safeTransfer(msg.sender, userInfo[msg.sender].coupon);
             emit WithdrawCoupon(msg.sender, userInfo[msg.sender].coupon);
         }
     }
@@ -220,7 +222,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         require(totalBalance() >= userInfo[msg.sender].optionPayout,
             "Insufficient balance");
         if (userInfo[msg.sender].optionPayout > 0) {
-            IERC20Upgradeable(USDC).safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
+            IERC20Upgradeable(currency).safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
             emit WithdrawCoupon(msg.sender, userInfo[msg.sender].optionPayout);
         }
     }
@@ -240,7 +242,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     function principalBalance() external view returns (uint256) {
         uint256 prevSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
         uint256 tokenSupply = ISHNFT(shNFT).balanceOf(msg.sender, currentTokenId);
-        return (prevSupply + tokenSupply) * 1000 * (10 ** _underlyingDecimals());
+        return (prevSupply + tokenSupply) * 1000 * (10 ** _currencyDecimals());
     }
 
     /**
@@ -261,20 +263,20 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
      * @notice Returns the product's total USDC balance
      */
     function totalBalance() public view returns (uint256) {
-        return IERC20Upgradeable(USDC).balanceOf(address(this));
+        return IERC20Upgradeable(currency).balanceOf(address(this));
     }
 
     /**
      * @notice Returns the decimal of underlying asset (USDC)
      */
-    function _underlyingDecimals() internal view returns (uint256) {
-        return IUSDC(USDC).decimals();
+    function _currencyDecimals() internal view returns (uint256) {
+        return IERC20MetadataUpgradeable(address(currency)).decimals();
     }
 
     /**
      * @notice Calculates the coupon payout based on current token supply
      */
     function _calcCoupon(uint256 _tokenSupply) internal view returns (uint256) {
-        return _tokenSupply * 1000 * (10 ** _underlyingDecimals()) * issuanceCycle.coupon / 10000;
+        return _tokenSupply * 1000 * (10 ** _currencyDecimals()) * issuanceCycle.coupon / 10000;
     }
 }

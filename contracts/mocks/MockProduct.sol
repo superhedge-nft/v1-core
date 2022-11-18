@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "../interfaces/ISHProduct.sol";
 import "../interfaces/ISHNFT.sol";
 import "../interfaces/IUSDC.sol";
-import "../SHNFT.sol";
 import "../libraries/Array.sol";
 
 contract MockProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable {
