@@ -19,8 +19,6 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
 
     address public shNFT;
 
-    /// @notice role in charge of status transition automation: Gelato Ops
-    address public constant ops = 0x6c3224f9b3feE000A444681d5D45e4532D5BA531;
     address public qredoDeribit;
 
     uint256 public maxCapacity;
@@ -34,10 +32,15 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     IssuanceCycle public issuanceCycle;
     
     mapping(address => UserInfo) public userInfo;
+
     address[] public investors;
 
     IERC20Upgradeable public currency;
 
+    /// @notice restricting access to the gelato automation functions
+    mapping(address => bool) public whitelisted;
+    address public dedicatedMsgSender;
+    
     function initialize(
         string memory _name,
         string memory _underlying,
@@ -61,11 +64,11 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         issuanceCycle = _issuanceCycle;
     }
     
-    /**
-     * @dev Throws if called by any account other than the keeper.
-     */
-    modifier onlyOps() {
-        require(msg.sender == ops, "OpsReady: onlyOps");
+    modifier onlyWhitelisted() {
+        require(
+            whitelisted[msg.sender] || msg.sender == dedicatedMsgSender,
+            "Only whitelisted"
+        );
         _;
     }
 
@@ -84,7 +87,11 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         _;
     }
 
-    function fundAccept() external onlyOps {
+    function setOpsDedicatedSender(address _sender) external {
+        dedicatedMsgSender = _sender;
+    }
+
+    function fundAccept() external onlyWhitelisted {
         // First, distribute option profit to the token holders.
         uint256 totalSupply = ISHNFT(shNFT).totalSupply(currentTokenId);
         if (optionProfit > 0) {
@@ -102,11 +109,11 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         currentTokenId = ISHNFT(shNFT).currentTokenID();
     }
 
-    function fundLock() external onlyOps {
+    function fundLock() external onlyWhitelisted {
         status = Status.Locked;
     }
 
-    function issuance() external onlyOps {
+    function issuance() external onlyWhitelisted {
         require(status == Status.Locked, "Fund is not locked");
         status = Status.Issued;
         // issuanceCycle.issuanceDate = block.timestamp;
@@ -124,7 +131,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         }
     }
 
-    function mature() external onlyOps onlyIssued {
+    function mature() external onlyIssued onlyWhitelisted {
         status = Status.Mature;
         // issuanceCycle.maturityDate = block.timestamp;
     }
@@ -143,7 +150,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     /**
      * @dev Update users' coupon balance every week
      */
-    function weeklyCoupon() external onlyOps onlyIssued {
+    function weeklyCoupon() external onlyIssued onlyWhitelisted {
         for (uint256 i = 0; i < investors.length; i++) {
             uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
             if (tokenSupply > 0) {
@@ -223,7 +230,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
             "Insufficient balance");
         if (userInfo[msg.sender].optionPayout > 0) {
             IERC20Upgradeable(currency).safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
-            emit WithdrawCoupon(msg.sender, userInfo[msg.sender].optionPayout);
+            emit WithdrawOption(msg.sender, userInfo[msg.sender].optionPayout);
         }
     }
 
