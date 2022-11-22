@@ -2,6 +2,15 @@
 pragma solidity ^0.8.9;
 
 interface IPoolMaster {
+    
+    enum State {
+        Active,
+        Warning,
+        ProvisionalDefault,
+        Default,
+        Closed
+    }
+    
     /// @notice Function is used to provide liquidity for Pool in exchange for cpTokens
     /// @dev Approval for desired amount of currency token should be given in prior
     /// @param currencyAmount Amount of currency token that user want to provide
@@ -20,4 +29,42 @@ interface IPoolMaster {
     /// @notice Function is used to redeem previously provided liquidity with interest, burning cpTokens
     /// @param currencyAmount Amount of currency to redeem (MaxUint256 to redeem maximal possible)
     function redeemCurrency(uint256 currencyAmount) external;
+
+    function manager() external view returns (address);
+
+    function currency() external view returns (address);
+
+    function borrows() external view returns (uint256);
+
+    function insurance() external view returns (uint256);
+
+    function reserves() external view returns (uint256);
+
+    function getBorrowRate() external view returns (uint256);
+
+    function getSupplyRate() external view returns (uint256);
+
+    function poolSize() external view returns (uint256);
+
+    function cash() external view returns (uint256);
+
+    function interest() external view returns (uint256);
+
+    function principal() external view returns (uint256);
+
+    function state() external view returns (State);
+
+    function initialize(address manager_, address currency_) external;
+
+    function setRewardPerSecond(uint256 rewardPerSecond_) external;
+
+    function withdrawReward(address account) external returns (uint256);
+
+    function transferReserves() external;
+
+    function processAuctionStart() external;
+
+    function processDebtClaim() external;
+
+    function setManager(address manager_) external;
 }
