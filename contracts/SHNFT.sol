@@ -153,26 +153,6 @@ contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
     }
 
     /**
-     * @dev Returns whether the specified token exists by checking to see if it has a creator
-     * @param _id uint256 ID of the token to query the existence of
-     * @return bool whether the token exists
-     */
-    function _exists(uint256 _id) internal view returns (bool) {
-        return creators[_id] != address(0);
-    }
-
-    /**
-     * @dev Sets `tokenURI` as the tokenURI of `tokenId`.
-     */
-    function _setTokenURI(uint256 tokenId, string memory tokenURI)
-        internal
-        virtual
-    {
-        _tokenURIs[tokenId] = tokenURI;
-        emit URI(uri(tokenId), tokenId);
-    }
-
-    /**
      * @dev Adds minter role to the product contract to mint ERC1155 token to the depositors
      * @param _account The address of product contract
      */
@@ -196,5 +176,25 @@ contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Returns whether the specified token exists by checking to see if it has a creator
+     * @param _id uint256 ID of the token to query the existence of
+     * @return bool whether the token exists
+     */
+    function _exists(uint256 _id) internal view returns (bool) {
+        return creators[_id] != address(0);
+    }
+
+    /**
+     * @dev Sets `tokenURI` as the tokenURI of `tokenId`.
+     */
+    function _setTokenURI(uint256 tokenId, string memory tokenURI)
+        internal
+        virtual
+    {
+        _tokenURIs[tokenId] = tokenURI;
+        emit URI(uri(tokenId), tokenId);
     }
 }

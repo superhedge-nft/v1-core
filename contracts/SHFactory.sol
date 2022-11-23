@@ -5,12 +5,13 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/ISHNFT.sol";
 import "./interfaces/ISHProduct.sol";
+import "./interfaces/ISHFactory.sol";
 import "./SHProduct.sol";
 
 /**
  * @notice Factory contract to create new products
  */
-contract SHFactory is OwnableUpgradeable {
+contract SHFactory is ISHFactory, OwnableUpgradeable {
 
     /// @notice Array of products' addresses
     address[] public products;

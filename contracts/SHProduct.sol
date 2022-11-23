@@ -7,7 +7,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHNFT.sol";
-import "./interfaces/IUSDC.sol";
 import "./libraries/Array.sol";
 
 contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable {
