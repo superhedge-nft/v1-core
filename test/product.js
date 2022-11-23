@@ -7,10 +7,10 @@ describe("SHFactory test suite", function () {
   let shFactory, shProduct, shNFT, mockUSDC;
   let owner, qredoDeribit
   before(async () => {
-    [owner, qredoDeribit, user1, user2, mockOps] = await ethers.getSigners();
+    [owner, qredoDeribit, user1, user2] = await ethers.getSigners();
 
-    const MockFactory = await ethers.getContractFactory("MockFactory");
-    shFactory = await upgrades.deployProxy(MockFactory, []);
+    const SHFactory = await ethers.getContractFactory("SHFactory");
+    shFactory = await upgrades.deployProxy(SHFactory, []);
     await shFactory.deployed();
 
     const SHNFT = await ethers.getContractFactory("SHNFT");
@@ -39,8 +39,10 @@ describe("SHFactory test suite", function () {
         shFactory.createProduct(
           productName,
           "BTC/USD",
-          qredoDeribit.address,
+          mockUSDC.address,
+          owner.address,
           shNFT.address,
+          qredoDeribit.address,
           2500,
           issuanceCycle
         )
@@ -51,8 +53,10 @@ describe("SHFactory test suite", function () {
       expect(await shFactory.createProduct(
         productName,
         "BTC/USD",
-        qredoDeribit.address,
+        mockUSDC.address,
+        owner.address,
         shNFT.address,
+        qredoDeribit.address,
         1000000,
         issuanceCycle
       )).to.be.emit(shFactory, "ProductCreated");
@@ -61,8 +65,8 @@ describe("SHFactory test suite", function () {
   
       // get product
       const productAddr = await shFactory.getProduct(productName);
-      const MockProduct = await ethers.getContractFactory("MockProduct");
-      shProduct = MockProduct.attach(productAddr);
+      const SHProduct = await ethers.getContractFactory("SHProduct");
+      shProduct = SHProduct.attach(productAddr);
   
       expect(await shProduct.currentTokenId()).to.equal(0);
       expect(await shProduct.shNFT()).to.equal(shNFT.address);
@@ -74,8 +78,7 @@ describe("SHFactory test suite", function () {
       await mockUSDC.mint(user1.address, parseUnits("10000", 6));
       await mockUSDC.mint(user2.address, parseUnits("10000", 6));
 
-      await shProduct.setMockOps(mockOps.address);
-      await shProduct.setMockUSDC(mockUSDC.address);
+      await shProduct.whitelist(owner.address);
     });
 
     it("Reverts if the product status is not 'Accepted'", async () => {
@@ -85,7 +88,7 @@ describe("SHFactory test suite", function () {
     });
 
     it("Reverts if the amount is invalid", async () => {
-      await shProduct.connect(mockOps).fundAccept();
+      await shProduct.fundAccept();
 
       await expect(
         shProduct.deposit(parseUnits("0", 6))
@@ -130,7 +133,7 @@ describe("SHFactory test suite", function () {
     });
 
     it("User2 deposits 1000 USDC but it is reverted since fund is locked", async () => {
-      await shProduct.connect(mockOps).fundLock();
+      await shProduct.fundLock();
       const amount2 = parseUnits("1000", 6);
       await expect(
         shProduct.connect(user2).deposit(amount2)
@@ -140,11 +143,11 @@ describe("SHFactory test suite", function () {
 
   describe("Check coupon & option payout balance", () => {
     before(async() => {
-      await shProduct.connect(mockOps).issuance();
+      await shProduct.issuance();
     });
 
     it("Check coupon balance after one week", async () => {
-      await shProduct.connect(mockOps).weeklyCoupon();
+      await shProduct.weeklyCoupon();
       const userInfo = await shProduct.userInfo(user1.address);
       const currentTokenID = await shProduct.currentTokenId();
       const tokenSupply = parseInt(await shNFT.balanceOf(user1.address, currentTokenID));
@@ -155,7 +158,7 @@ describe("SHFactory test suite", function () {
 
   describe("Withdraw", () => {
     before(async() => {
-      await shProduct.connect(mockOps).mature();
+      await shProduct.mature();
     });
 
     it("Reverts if the product status is not 'Accepted'", async() => {
@@ -165,7 +168,7 @@ describe("SHFactory test suite", function () {
     });
 
     it("Withdraw principal", async () => {
-      await shProduct.connect(mockOps).fundAccept();
+      await shProduct.fundAccept();
       const prevTokenID = await shProduct.prevTokenId();
       const tokenSupply = parseInt(await shNFT.balanceOf(user1.address, prevTokenID));
       const principal = tokenSupply * 1000 * Math.pow(10, 6);
@@ -197,8 +200,8 @@ describe("SHFactory test suite", function () {
     };
 
     it("Reverts if the product status is already 'issued'", async () => {
-      await shProduct.connect(mockOps).fundLock();
-      await shProduct.connect(mockOps).issuance();
+      await shProduct.fundLock();
+      await shProduct.issuance();
       await expect(shFactory.setIssuanceCycle(
         shProduct.address,
         newIssuanceCycle
@@ -206,7 +209,7 @@ describe("SHFactory test suite", function () {
     });
 
     it("set successfully", async () => {
-      await shProduct.connect(mockOps).mature();
+      await shProduct.mature();
       expect(await shFactory.setIssuanceCycle(
         shProduct.address,
         newIssuanceCycle
