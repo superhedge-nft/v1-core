@@ -17,8 +17,8 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     string public name;
     string public underlying;
 
+    address public manager;
     address public shNFT;
-
     address public qredoDeribit;
 
     uint256 public maxCapacity;
@@ -45,6 +45,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         string memory _name,
         string memory _underlying,
         IERC20Upgradeable _currency,
+        address _manager,
         address _shNFT,
         address _qredo_deribit,
         uint256 _maxCapacity,
@@ -56,6 +57,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         name = _name;
         underlying = _underlying;
 
+        manager = _manager;
         qredoDeribit = _qredo_deribit;
         maxCapacity = _maxCapacity;
 
@@ -69,6 +71,12 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
             whitelisted[msg.sender] || msg.sender == dedicatedMsgSender,
             "Only whitelisted"
         );
+        _;
+    }
+
+    /// @notice Modifier for functions restricted to manager
+    modifier onlyManager() {
+        require(msg.sender == manager, "Not a manager");
         _;
     }
 
@@ -87,8 +95,18 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         _;
     }
 
-    function setOpsDedicatedSender(address _sender) external {
+    /**
+     * @notice Sets dedicated msg.sender to restrict access to the functions that Gelato will call
+     */
+    function setDedicatedMsgSender(address _sender) external onlyManager {
         dedicatedMsgSender = _sender;
+    }
+
+    /**
+     * @notice Whitelists the additional callers for the functions that Gelato will call
+     */
+    function whitelist(address _account) external onlyManager {
+        whitelisted[_account] = true;
     }
 
     function fundAccept() external onlyWhitelisted {
@@ -154,7 +172,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         for (uint256 i = 0; i < investors.length; i++) {
             uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
             if (tokenSupply > 0) {
-                userInfo[investors[i]].coupon += _calcCoupon(tokenSupply);
+                userInfo[investors[i]].coupon += _convertTokenToCurrency(tokenSupply) * issuanceCycle.coupon / 10000;
             }
         }
     }
@@ -197,7 +215,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     function withdrawPrincipal() external nonReentrant onlyAccepted {
         uint256 tokenSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
         require(tokenSupply > 0, "No principal");
-        uint256 principal = tokenSupply * 1000 * (10 ** _currencyDecimals());
+        uint256 principal = _convertTokenToCurrency(tokenSupply);
         require(totalBalance() >= principal, "Insufficient balance");
         
         IERC20Upgradeable(currency).safeTransfer(msg.sender, principal);
@@ -249,7 +267,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     function principalBalance() external view returns (uint256) {
         uint256 prevSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
         uint256 tokenSupply = ISHNFT(shNFT).balanceOf(msg.sender, currentTokenId);
-        return (prevSupply + tokenSupply) * 1000 * (10 ** _currencyDecimals());
+        return _convertTokenToCurrency(prevSupply + tokenSupply);
     }
 
     /**
@@ -281,9 +299,9 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     }
 
     /**
-     * @notice Calculates the coupon payout based on current token supply
+     * @notice Calculates the currency amount based on token supply
      */
-    function _calcCoupon(uint256 _tokenSupply) internal view returns (uint256) {
-        return _tokenSupply * 1000 * (10 ** _currencyDecimals()) * issuanceCycle.coupon / 10000;
+    function _convertTokenToCurrency(uint256 _tokenSupply) internal view returns (uint256) {
+        return _tokenSupply * 1000 * (10 ** _currencyDecimals());
     }
 }

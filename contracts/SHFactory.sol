@@ -50,6 +50,7 @@ contract SHFactory is OwnableUpgradeable {
      * @param _name is the product name
      * @param _underlying is the underlying asset label
      * @param _currency principal asset, USDC address
+     * @param _manager manager of the product
      * @param _qredo_deribit is the wallet address of Deribit trading platform
      * @param _maxCapacity is the maximum USDC amount that this product can accept
      * @param _issuanceCycle is the struct variable with issuance date, 
@@ -59,6 +60,7 @@ contract SHFactory is OwnableUpgradeable {
         string calldata _name,
         string calldata _underlying,
         IERC20Upgradeable _currency,
+        address _manager,
         address _shNFT,
         address _qredo_deribit,
         uint256 _maxCapacity,
@@ -73,6 +75,7 @@ contract SHFactory is OwnableUpgradeable {
             _name, 
             _underlying, 
             _currency,
+            _manager,
             _shNFT, 
             _qredo_deribit, 
             _maxCapacity, 
