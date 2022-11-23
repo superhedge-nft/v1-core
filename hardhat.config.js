@@ -15,7 +15,9 @@ module.exports = {
   },
   networks: {
     hardhat: {
+      chainId: 31337,
       forking: {
+        enabled: true,
         url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_POLYGON}`
       }
     },
