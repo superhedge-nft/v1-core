@@ -36,8 +36,6 @@ interface IPoolMaster {
 
     function borrows() external view returns (uint256);
 
-    function insurance() external view returns (uint256);
-
     function reserves() external view returns (uint256);
 
     function getBorrowRate() external view returns (uint256);
@@ -54,17 +52,11 @@ interface IPoolMaster {
 
     function state() external view returns (State);
 
-    function initialize(address manager_, address currency_) external;
-
-    function setRewardPerSecond(uint256 rewardPerSecond_) external;
-
     function withdrawReward(address account) external returns (uint256);
 
-    function transferReserves() external;
+    function name() external view returns (string memory);
 
-    function processAuctionStart() external;
+    function symbol() external view returns (string memory);
 
-    function processDebtClaim() external;
-
-    function setManager(address manager_) external;
+    function balanceOf(address account) external view returns (uint256);
 }

@@ -55,6 +55,18 @@ interface ISHProduct {
         uint256 _amount
     );
 
+    event Distribute(
+        address indexed _qredoDeribit,
+        uint256 _optionRate,
+        address[] _clearpools,
+        uint256[] _yieldRates
+    );
+
+    event RedeemYield(
+        address[] _clearpools,
+        uint256 _redeemAmount
+    );
+
     function maxCapacity() external view returns (uint256);
 
     function shNFT() external view returns (address);
