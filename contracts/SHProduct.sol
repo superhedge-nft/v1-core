@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHNFT.sol";
+import "./interfaces/clearpool/IPoolMaster.sol";
 import "./libraries/Array.sol";
 
 contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable {
@@ -35,7 +36,8 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     address[] public investors;
 
     IERC20Upgradeable public currency;
-
+    bool public isDistributed;
+    address[] public clearpools;
     /// @notice restricting access to the gelato automation functions
     mapping(address => bool) public whitelisted;
     address public dedicatedMsgSender;
@@ -89,7 +91,12 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         _;
     }
 
-    modifier onlyDeribit() {
+    modifier onlyMature() {
+        require(status == Status.Mature, "Not mature status");
+        _;
+    }
+
+    modifier onlyQredo() {
         require(msg.sender == qredoDeribit, "Not a deribit wallet");
         _;
     }
@@ -156,8 +163,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     /**
      * @dev Transfers option profit from a deribit wallet, called by an owner
      */
-    function redeemOptionPayout(uint256 _optionProfit) external onlyDeribit {
-        require(status == Status.Mature, "Not expired yet");
+    function redeemOptionPayout(uint256 _optionProfit) external onlyQredo onlyMature {
         IERC20Upgradeable(currency).safeTransferFrom(msg.sender, address(this), _optionProfit);
         optionProfit = _optionProfit;
 
@@ -302,5 +308,52 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
      */
     function _convertTokenToCurrency(uint256 _tokenSupply) internal view returns (uint256) {
         return _tokenSupply * 1000 * (10 ** _currencyDecimals());
+    }
+
+    /**
+     * @notice After the fund is locked, distribute USDC into the Qredo wallet and 
+     * permissionless borrower poools of Clearpool protocol
+     */
+    function distribute(
+        uint256 _optionRate, 
+        uint256[] calldata _yieldRates, 
+        address[] calldata _clearpools
+    ) external onlyManager onlyIssued {
+        require(!isDistributed, "Already distributed");
+        require(_yieldRates.length == _clearpools.length, "Should have the same length");
+        uint256 totalYieldRate = 0;
+        for (uint256 i = 0; i < _yieldRates.length; i++) {
+            totalYieldRate += _yieldRates[i];
+        }
+        require((totalYieldRate + _optionRate) <= 100, "Total percent should be equal or less than 100");
+        
+        // Transfer option amount to the Qredo wallet
+        if (_optionRate > 0) {
+            uint256 optionAmount = currentCapacity * _optionRate / 100;
+            IERC20Upgradeable(currency).transfer(qredoDeribit, optionAmount);
+        }
+
+        // Lend into the clearpool
+        for (uint256 i = 0; i < _clearpools.length; i++) {
+            if (_yieldRates[i] > 0) {
+                clearpools.push(_clearpools[i]);
+                uint256 yieldAmount = currentCapacity * _yieldRates[i] / 100;
+                IERC20Upgradeable(currency).approve(_clearpools[i], yieldAmount);
+                IPoolMaster(_clearpools[i]).provide(yieldAmount);
+            }
+        }
+        isDistributed = true;
+        emit Distribute(qredoDeribit, _optionRate, _clearpools, _yieldRates);
+    }
+
+    function redeemYield() external onlyManager onlyMature {
+        address[] memory _clearpools = clearpools;
+        require(_clearpools.length > 0, "No yield source");
+        for (uint256 i = 0; i < _clearpools.length; i++) {
+            uint256 cpTokenBal = IPoolMaster(_clearpools[i]).balanceOf(address(this));
+            IPoolMaster(_clearpools[i]).redeem(cpTokenBal);
+        }
+        uint256 redeemAmount = IERC20Upgradeable(currency).balanceOf(address(this));
+        emit RedeemYield(_clearpools, redeemAmount);
     }
 }
