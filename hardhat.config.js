@@ -18,7 +18,7 @@ module.exports = {
       chainId: 31337,
       forking: {
         enabled: true,
-        url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_POLYGON}`
+        url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_MAINNET}`
       }
     },
     mumbai: {
@@ -52,6 +52,6 @@ module.exports = {
     currency: "USD",
   },
   etherscan: {
-    apiKey: process.env.POLYGONSCAN_API_KEY,
+    apiKey: process.env.ETHERSCAN_API_KEY,
   }
 };
