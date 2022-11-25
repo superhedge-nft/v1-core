@@ -353,7 +353,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
             uint256 cpTokenBal = IPoolMaster(_clearpools[i]).balanceOf(address(this));
             IPoolMaster(_clearpools[i]).redeem(cpTokenBal);
         }
-        uint256 redeemAmount = IERC20Upgradeable(currency).balanceOf(address(this));
-        emit RedeemYield(_clearpools, redeemAmount);
+        isDistributed = false;
+        emit RedeemYield(_clearpools);
     }
 }
