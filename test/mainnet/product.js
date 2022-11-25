@@ -53,7 +53,13 @@ describe("SHFactory test suite", function () {
             value: parseEther("5")
         });
 
-        whaleSigner = await ethers.provider.getSigner(whaleAddress);
+        await owner.sendTransaction({
+            to: qredoWallet,
+            value: parseEther("2")
+        });
+
+        whaleSigner = ethers.provider.getSigner(whaleAddress);
+        qredoSigner = ethers.provider.getSigner(qredoWallet);
     });
 
     describe("Create product", () => {
@@ -190,12 +196,41 @@ describe("SHFactory test suite", function () {
         });
 
         it("Distribute", async () => {
-            await shProduct.distribute(50, [20, 30], [aurosPoolAddr, wintermutePoolAddr]);
+            const optionRate = 50;
+            const yieldRates = [20, 30];
+            const clearpools = [aurosPoolAddr, wintermutePoolAddr];
+            expect(
+                await shProduct.distribute(optionRate, yieldRates, clearpools)
+            ).to.emit(shProduct, "Distribute")
+            .withArgs(qredoWallet, optionRate, clearpools, yieldRates)
+
             console.log(await aurosPool.balanceOf(shProduct.address));
             console.log(await aurosPool.symbol());
 
             console.log(await wintermutePool.balanceOf(shProduct.address));
             console.log(await wintermutePool.symbol());
+
+            console.log(await usdc.balanceOf(qredoWallet));
+        });
+    });
+
+    describe("Redeem prinicipal & interest, option", () => {
+        before(async() => {
+            await shProduct.mature();
+        });
+
+        it("Redeem option", async() => {
+            const transferAmount = await usdc.balanceOf(qredoWallet);
+            await usdc.connect(qredoSigner).approve(shProduct.address, transferAmount);
+            expect(
+                await shProduct.connect(qredoSigner).redeemOptionPayout(transferAmount)
+            ).to.emit(shProduct, "RedeemOptionPayout").withArgs(qredoWallet, transferAmount);
+        });
+
+        it("Redeem yield", async() => {
+            expect(
+                await shProduct.redeemYield()
+            ).to.emit(shProduct, "RedeemYield");
         });
     });
 });
