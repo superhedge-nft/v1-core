@@ -63,8 +63,7 @@ interface ISHProduct {
     );
 
     event RedeemYield(
-        address[] _clearpools,
-        uint256 _redeemAmount
+        address[] _clearpools
     );
 
     function maxCapacity() external view returns (uint256);
