@@ -1,8 +1,8 @@
 {
   "manifestVersion": "3.2",
   "admin": {
-    "address": "0x707531c9999AaeF9232C8FEfBA31FBa4cB78d84a",
-    "txHash": "0xb535bf0b5f4494864afc17f7a93b450c4f23a6721fa89863035e24d7ce57ef65"
+    "address": "0x2538a10b7fFb1B78c890c870FC152b10be121f04",
+    "txHash": "0xf05969a240e6327adf4c21198369d0c6463805b26a5fb33d754516db383f9e8c"
   },
   "proxies": [
     {
@@ -78,6 +78,16 @@
     {
       "address": "0xdB05A386810c809aD5a77422eb189D36c7f24402",
       "txHash": "0xbfdda828f7727009f82f4906ba4afcf93c73a110a657e5ab7007e2bacf7ed5ae",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x24432a08869578aAf4d1eadA12e1e78f171b1a2b",
+      "txHash": "0xfec8d4b3864357d133964337fce38abefa276f16d7a74aa89fb7167d35e27dc2",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xbf2ad38fd09F37f50f723E35dd84EEa1C282c5C9",
+      "txHash": "0x13e1b30c5ffabde3f3864cfba86f3129bdb9a2306d089a3f17babac1402cd64c",
       "kind": "transparent"
     }
   ],
@@ -440,8 +450,8 @@
       }
     },
     "a9868e74e4e9eff4e694a123b62a8fce1699def5772dcd7244b2d860e4f28547": {
-      "address": "0x24432a08869578aAf4d1eadA12e1e78f171b1a2b",
-      "txHash": "0x4cdd37efc749ea124b74b5c9a27be2ac29a668a9ac815196e843da6929ee737a",
+      "address": "0xdB05A386810c809aD5a77422eb189D36c7f24402",
+      "txHash": "0xa2d7c5fd4861d1e0043ecda87ac083d1d0ff0e3d73d04a960722a627e8096b2d",
       "layout": {
         "solcVersion": "0.8.14",
         "storage": [
@@ -530,7 +540,7 @@
             "label": "tokenIds",
             "offset": 0,
             "slot": "201",
-            "type": "t_struct(Counter)3569_storage",
+            "type": "t_struct(Counter)2332_storage",
             "contract": "SHNFT",
             "src": "contracts/SHNFT.sol:14"
           },
@@ -636,7 +646,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(Counter)3569_storage": {
+          "t_struct(Counter)2332_storage": {
             "label": "struct CountersUpgradeable.Counter",
             "members": [
               {
@@ -797,8 +807,8 @@
       }
     },
     "4547d2f37ebbc3a01cf9bcfe1830bbeaa88217a526436db89a4314518959d390": {
-      "address": "0xB9d9e972100a1dD01cd441774b45b5821e136043",
-      "txHash": "0x4d521b9410cf09abb750e1f4676182505f53d98266b54f18058053135d90434d",
+      "address": "0x707531c9999AaeF9232C8FEfBA31FBa4cB78d84a",
+      "txHash": "0xaf95ddffa946e2f495cb40738bba696858f94c987c3bf0e788f3fe540274cf89",
       "layout": {
         "solcVersion": "0.8.14",
         "storage": [
