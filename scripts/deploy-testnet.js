@@ -23,8 +23,16 @@ async function main() {
 
   console.log(`SHNFT deployed at ${shNFT.address}`);
 
+  // Deploy MockUSDC contract
+  const MockUSDC = await ethers.getContractFactory("MockUSDC");
+  const mockUSDC = await MockUSDC.deploy();
+  await mockUSDC.deployed();
+
+  console.log(`MockUSDC deployed at ${mockUSDC.address}`);
+
   // Create new product
-  const deployer = "0x488177c42bD58104618cA771A674Ba7e4D5A2FBB";
+  const manager = "0x488177c42bD58104618cA771A674Ba7e4D5A2FBB";
+  const qredoWallet = "0xBA6Aa0Ad8c3ADa57046920135bD323d02dF7E6Ef";
 
   const issuanceCycle = {
       coupon: 10,
@@ -38,8 +46,10 @@ async function main() {
   const tx = await shFactory.createProduct(
     "BTC Defensive Spread", // product name
     "BTC/USD", // underlying
-    deployer, // QREDO Wallet
+    mockUSDC.address, // mock USDC address
+    manager,
     shNFT.address, // ERC1155 NFT address
+    qredoWallet, // QREDO Wallet
     1000000, // Max capacity
     issuanceCycle // First issuance cycle
   );
