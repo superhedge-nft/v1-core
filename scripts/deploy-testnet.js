@@ -31,7 +31,7 @@ async function main() {
   console.log(`MockUSDC deployed at ${mockUSDC.address}`);
 
   // Create new product
-  const manager = "0x488177c42bD58104618cA771A674Ba7e4D5A2FBB";
+  const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
   const qredoWallet = "0xBA6Aa0Ad8c3ADa57046920135bD323d02dF7E6Ef";
 
   const issuanceCycle = {
