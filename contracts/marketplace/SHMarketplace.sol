@@ -38,6 +38,12 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 startingTime
     );
 
+    event ItemCanceled(
+        address indexed owner,
+        address indexed nft,
+        uint256 tokenId
+    );
+
     /// @notice Structure for listed items
     struct Listing {
         uint256 quantity;
@@ -59,6 +65,16 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     /// @notice Address registry
     IAddressRegistry public addressRegistry;
+
+    modifier isListed(
+        address _nftAddress,
+        uint256 _tokenId,
+        address _owner
+    ) {
+        Listing memory listing = listings[_nftAddress][_tokenId][_owner];
+        require(listing.quantity > 0, "not listed item");
+        _;
+    }
 
     modifier notListed(
         address _nftAddress,
@@ -130,6 +146,15 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         );
     }
 
+    /// @notice Method for canceling listed NFT
+    function cancelListing(address _nftAddress, uint256 _tokenId)
+        external
+        nonReentrant
+        isListed(_nftAddress, _tokenId, _msgSender())
+    {
+        _cancelListing(_nftAddress, _tokenId, _msgSender());
+    }
+
     function _validPayToken(address _payToken) internal view {
         require(
             _payToken == address(0) ||
@@ -138,5 +163,35 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                         .enabled(_payToken)),
             "invalid pay token"
         );
+    }
+
+    function _validOwner(
+        address _nftAddress,
+        uint256 _tokenId,
+        address _owner,
+        uint256 quantity
+    ) internal view {
+        if (IERC165Upgradeable(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155)) {
+            IERC1155Upgradeable nft = IERC1155Upgradeable(_nftAddress);
+            require(
+                nft.balanceOf(_owner, _tokenId) >= quantity,
+                "not owning item"
+            );
+        } else {
+            revert("invalid nft address");
+        }
+    }
+
+    function _cancelListing(
+        address _nftAddress,
+        uint256 _tokenId,
+        address _owner
+    ) private {
+        Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
+
+        _validOwner(_nftAddress, _tokenId, _owner, listedItem.quantity);
+
+        delete (listings[_nftAddress][_tokenId][_owner]);
+        emit ItemCanceled(_owner, _nftAddress, _tokenId);
     }
 }
