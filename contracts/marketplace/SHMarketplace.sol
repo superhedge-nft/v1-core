@@ -65,6 +65,9 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 tokenId
     );
 
+    event UpdatePlatformFee(uint16 platformFee);
+    event UpdatePlatformFeeRecipient(address payable platformFeeRecipient);
+    
     /// @notice Structure for listed items
     struct Listing {
         uint256 quantity;
@@ -130,6 +133,37 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         __Ownable_init();
         __ReentrancyGuard_init();
+    }
+
+    /**
+     * @notice Method for updating platform fee
+     * @dev Only admin
+     * @param _platformFee uint16 the platform fee to set
+     */
+    function updatePlatformFee(uint16 _platformFee) external onlyOwner {
+        platformFee = _platformFee;
+        emit UpdatePlatformFee(_platformFee);
+    }
+
+    /**
+     * @notice Method for updating platform fee address
+     * @dev Only admin
+     * @param _platformFeeRecipient payable address the address to sends the funds to
+     */
+    function updatePlatformFeeRecipient(address payable _platformFeeRecipient)
+        external
+        onlyOwner
+    {
+        feeReceipient = _platformFeeRecipient;
+        emit UpdatePlatformFeeRecipient(_platformFeeRecipient);
+    }
+
+    /**
+     * @notice Update FantomAddressRegistry contract
+     * @dev Only admin
+     */
+    function updateAddressRegistry(address _registry) external onlyOwner {
+        addressRegistry = IAddressRegistry(_registry);
     }
 
     /// @notice Method for listing NFT
