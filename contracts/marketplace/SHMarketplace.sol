@@ -159,7 +159,7 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Update FantomAddressRegistry contract
+     * @notice Update AddressRegistry contract
      * @dev Only admin
      */
     function updateAddressRegistry(address _registry) external onlyOwner {
@@ -194,7 +194,6 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         } else {
             revert("invalid nft address");
         }
-
         _validPayToken(_payToken);
 
         listings[_nftAddress][_tokenId][_msgSender()] = Listing(

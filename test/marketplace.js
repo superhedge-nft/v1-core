@@ -4,10 +4,11 @@ const { ethers, upgrades } = require("hardhat");
 const { parseUnits } = ethers.utils;
 
 describe("SHMarketplace test suite", () => {
-    let shMarketplace, shNFT, shFactory, shProduct, mockUSDC;
+    let shNFT, shFactory, shProduct, mockUSDC;
+    let shMarketplace, addressRegistry, tokenRegistry, priceFeed;
     let owner, qredoDeribit, feeRecipient;
 
-    const platformFee = ethers.BigNumber.from('5'); // 0.5% of sales price
+    const platformFee = 5; // 0.5% of sales price
 
     before(async() => {
         [owner, qredoDeribit, feeRecipient, user1] = await ethers.getSigners();
@@ -26,11 +27,22 @@ describe("SHMarketplace test suite", () => {
         mockUSDC = await MockUSDC.deploy();
         await mockUSDC.deployed();
 
+        const AddressRegistry = await ethers.getContractFactory("AddressRegistry");
+        addressRegistry = await upgrades.deployProxy(AddressRegistry, []);
+        await addressRegistry.deployed();
+
         const SHMarketplace = await ethers.getContractFactory("SHMarketplace");
         shMarketplace = await upgrades.deployProxy(SHMarketplace, [
             feeRecipient.address, platformFee
         ]);
         await shMarketplace.deployed();
+
+        const TokenRegistry = await ethers.getContractFactory("TokenRegistry");
+        tokenRegistry = await upgrades.deployProxy(TokenRegistry, []);
+        await tokenRegistry.deployed();
+
+        await addressRegistry.updateMarketplace(shMarketplace.address);
+        await addressRegistry.updateTokenRegistry(tokenRegistry.address);
     });
 
     describe("Create product", () => {
@@ -46,7 +58,7 @@ describe("SHMarketplace test suite", () => {
             uri: tokenURI
         }
 
-        it("product created", async() => {
+        it("Product created", async() => {
             expect(await shFactory.createProduct(
                 productName,
                 "BTC/USD",
@@ -80,17 +92,32 @@ describe("SHMarketplace test suite", () => {
     });
 
     describe("Listing NFT", () => {
-        it("successfully lists item", async() => {
-            const currentTokenID = await shProduct.currentTokenId();
+        let currentTokenID;
+        before(async() => {
+            currentTokenID = await shProduct.currentTokenId();
+            startingTime = Math.floor(Date.now() / 1000) + 1 * 24 * 3600;
+        });
 
-            await shMarketplace.listItem(
+        it("Reverts unless the users hold enough nfts", async() => {
+            await expect(shMarketplace.listItem(
                 shNFT.address,
                 currentTokenID,
-                1,
+                2,
                 mockUSDC.address,
                 parseUnits('1000', 6),
-                (new Date().getTime() / 1000) + 7 * 24 * 3600
-            );
+                startingTime
+            )).to.be.revertedWith("must hold enough nfts");
+        });
+
+        it("Reverts if a nft is not approved", async() => {
+            await expect(shMarketplace.connect(user1).listItem(
+                shNFT.address,
+                currentTokenID,
+                2,
+                mockUSDC.address,
+                parseUnits('1000', 6),
+                startingTime
+            )).to.be.revertedWith("item not approved");
         });
     });
 });
