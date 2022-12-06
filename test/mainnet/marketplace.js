@@ -9,6 +9,7 @@ describe("SHMarketplace test suite", () => {
     let owner, qredoDeribit, feeRecipient;
 
     const platformFee = 5; // 0.5% of sales price
+    const wETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
     before(async() => {
         [owner, qredoDeribit, feeRecipient, user1] = await ethers.getSigners();
@@ -41,8 +42,15 @@ describe("SHMarketplace test suite", () => {
         tokenRegistry = await upgrades.deployProxy(TokenRegistry, []);
         await tokenRegistry.deployed();
 
+        const PriceFeed = await ethers.getContractFactory("PriceFeed");
+        priceFeed = await upgrades.deployProxy(PriceFeed, [
+            addressRegistry.address, wETH
+        ]);
+        await priceFeed.deployed();
+
         await addressRegistry.updateMarketplace(shMarketplace.address);
         await addressRegistry.updateTokenRegistry(tokenRegistry.address);
+        await addressRegistry.updatePriceFeed(priceFeed.address);
     });
 
     describe("Create product", () => {
@@ -92,8 +100,9 @@ describe("SHMarketplace test suite", () => {
     });
 
     describe("Listing NFT", () => {
-        let currentTokenID;
+        let currentTokenID, startingTime;
         before(async() => {
+            await shMarketplace.connect(owner).updateAddressRegistry(addressRegistry.address);
             currentTokenID = await shProduct.currentTokenId();
             startingTime = Math.floor(Date.now() / 1000) + 1 * 24 * 3600;
         });
@@ -118,6 +127,34 @@ describe("SHMarketplace test suite", () => {
                 parseUnits('1000', 6),
                 startingTime
             )).to.be.revertedWith("item not approved");
+        });
+
+        it("Invalid pay token", async() => {
+            await shNFT.connect(user1).setApprovalForAll(shMarketplace.address, true);
+
+            await expect(shMarketplace.connect(user1).listItem(
+                shNFT.address,
+                currentTokenID,
+                2,
+                mockUSDC.address,
+                parseUnits('1000', 6),
+                startingTime
+            )).to.be.revertedWith("invalid pay token");
+        });
+
+        it("Successfully lists item", async() => {
+            await tokenRegistry.connect(owner).add(mockUSDC.address);
+
+            expect(await shMarketplace.connect(user1).listItem(
+                shNFT.address,
+                currentTokenID,
+                2,
+                mockUSDC.address,
+                parseUnits('1100', 6),
+                startingTime
+            )).to.be.emit(shMarketplace, "ItemListed").withArgs(
+                user1.address, shNFT.address, currentTokenID, 2, mockUSDC.address, parseUnits('1100', 6), startingTime
+            );
         });
     });
 });
