@@ -185,6 +185,11 @@ describe("SHMarketplace test suite", () => {
         let currentTokenID;
         before(async() => {
             currentTokenID = await shProduct.currentTokenId();
+
+            // USDC/USD aggregator
+            const usdcOracle = "0x8fffffd4afb6115b954bd326cbe7b4ba576818f6";
+            // set USDC/USD price oracle
+            await priceFeed.registerOracle(mockUSDC.address, usdcOracle);
         });
         
         it("Reverts if an item is not buyable", async() => {
@@ -217,6 +222,6 @@ describe("SHMarketplace test suite", () => {
                     user1.address
                 )
             ).to.be.emit(shMarketplace, "ItemSold");
-        })
+        });
     });
 });
