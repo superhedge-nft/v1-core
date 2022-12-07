@@ -150,7 +150,9 @@ describe("SHFactory test suite", function () {
             
             expect(
                 await shProduct.connect(user1).deposit(amount)
-            ).to.be.emit(shProduct, "Deposit").withArgs(user1.address, amount, currentTokenID, supply);
+            ).to.be.emit(shProduct, "Deposit").withArgs(
+                user1.address, amount, currentTokenID, supply
+            );
 
             expect(
                 await usdc.balanceOf(shProduct.address)
