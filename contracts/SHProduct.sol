@@ -5,12 +5,13 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20Metadat
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHNFT.sol";
 import "./interfaces/clearpool/IPoolMaster.sol";
 import "./libraries/Array.sol";
 
-contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using Array for address[];
 
@@ -19,7 +20,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
 
     address public manager;
     address public shNFT;
-    address public qredoDeribit;
+    address public qredoWallet;
 
     uint256 public maxCapacity;
     uint256 public currentCapacity;
@@ -48,18 +49,19 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         IERC20Upgradeable _currency,
         address _manager,
         address _shNFT,
-        address _qredo_deribit,
+        address _qredoWallet,
         uint256 _maxCapacity,
         IssuanceCycle memory _issuanceCycle
     ) public initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
+        __Pausable_init();
 
         name = _name;
         underlying = _underlying;
 
         manager = _manager;
-        qredoDeribit = _qredo_deribit;
+        qredoWallet = _qredoWallet;
         maxCapacity = _maxCapacity;
 
         currency = _currency;
@@ -96,11 +98,6 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         _;
     }
 
-    modifier onlyQredo() {
-        require(msg.sender == qredoDeribit, "Not a deribit wallet");
-        _;
-    }
-
     /**
      * @notice Sets dedicated msg.sender to restrict access to the functions that Gelato will call
      */
@@ -115,7 +112,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         whitelisted[_account] = true;
     }
 
-    function fundAccept() external onlyWhitelisted {
+    function fundAccept() external whenNotPaused onlyWhitelisted {
         // First, distribute option profit to the token holders.
         uint256 totalSupply = ISHNFT(shNFT).totalSupply(currentTokenId);
         if (optionProfit > 0) {
@@ -133,11 +130,11 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         currentTokenId = ISHNFT(shNFT).currentTokenID();
     }
 
-    function fundLock() external onlyWhitelisted {
+    function fundLock() external whenNotPaused onlyWhitelisted {
         status = Status.Locked;
     }
 
-    function issuance() external onlyWhitelisted {
+    function issuance() external whenNotPaused onlyWhitelisted {
         require(status == Status.Locked, "Fund is not locked");
         status = Status.Issued;
         // issuanceCycle.issuanceDate = block.timestamp;
@@ -155,25 +152,15 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         }
     }
 
-    function mature() external onlyIssued onlyWhitelisted {
+    function mature() external whenNotPaused onlyIssued onlyWhitelisted {
         status = Status.Mature;
         // issuanceCycle.maturityDate = block.timestamp;
     }
 
     /**
-     * @dev Transfers option profit from a deribit wallet, called by an owner
-     */
-    function redeemOptionPayout(uint256 _optionProfit) external onlyQredo onlyMature {
-        IERC20Upgradeable(currency).safeTransferFrom(msg.sender, address(this), _optionProfit);
-        optionProfit = _optionProfit;
-
-        emit RedeemOptionPayout(msg.sender, _optionProfit);
-    }
-
-    /**
      * @dev Update users' coupon balance every week
      */
-    function weeklyCoupon() external onlyIssued onlyWhitelisted {
+    function weeklyCoupon() external whenNotPaused onlyIssued onlyWhitelisted {
         for (uint256 i = 0; i < investors.length; i++) {
             uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
             if (tokenSupply > 0) {
@@ -196,7 +183,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
      * @dev Deposits the USDC into the structured product and mint ERC1155 NFT
      * @param _amount is the amount of USDC to deposit
      */
-    function deposit(uint256 _amount) external nonReentrant onlyAccepted {
+    function deposit(uint256 _amount) external whenNotPaused nonReentrant onlyAccepted {
         require(_amount > 0, "Amount must be greater than zero");
         uint256 decimals = _currencyDecimals();
         require((_amount % (1000 * 10 ** decimals)) == 0, "Amount must be whole-number thousands");
@@ -258,6 +245,64 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     }
 
     /**
+     * @notice After the fund is locked, distribute USDC into the Qredo wallet and
+     * the lending pools to generate passive income
+     */
+    function distribute(
+        uint256 _optionRate, 
+        uint256[] calldata _yieldRates, 
+        address[] calldata _clearpools
+    ) external onlyManager onlyIssued {
+        require(!isDistributed, "Already distributed");
+        require(_yieldRates.length == _clearpools.length, "Should have the same length");
+        uint256 totalYieldRate = 0;
+        for (uint256 i = 0; i < _yieldRates.length; i++) {
+            totalYieldRate += _yieldRates[i];
+        }
+        require((totalYieldRate + _optionRate) <= 100, "Total percent should be equal or less than 100");
+        
+        // Transfer option amount to the Qredo wallet
+        if (_optionRate > 0) {
+            uint256 optionAmount = currentCapacity * _optionRate / 100;
+            IERC20Upgradeable(currency).transfer(qredoWallet, optionAmount);
+        }
+
+        // Lend into the clearpool
+        for (uint256 i = 0; i < _clearpools.length; i++) {
+            if (_yieldRates[i] > 0) {
+                clearpools.push(_clearpools[i]);
+                uint256 yieldAmount = currentCapacity * _yieldRates[i] / 100;
+                IERC20Upgradeable(currency).approve(_clearpools[i], yieldAmount);
+                IPoolMaster(_clearpools[i]).provide(yieldAmount);
+            }
+        }
+        isDistributed = true;
+        emit Distribute(qredoWallet, _optionRate, _clearpools, _yieldRates);
+    }
+
+    function redeemYield() external onlyManager onlyMature {
+        address[] memory _clearpools = clearpools;
+        require(_clearpools.length > 0, "No yield source");
+        for (uint256 i = 0; i < _clearpools.length; i++) {
+            uint256 cpTokenBal = IPoolMaster(_clearpools[i]).balanceOf(address(this));
+            IPoolMaster(_clearpools[i]).redeem(cpTokenBal);
+        }
+        isDistributed = false;
+        emit RedeemYield(_clearpools);
+    }
+
+    /**
+     * @dev Transfers option profit from a qredo wallet, called by an owner
+     */
+    function redeemOptionPayout(uint256 _optionProfit) external onlyMature {
+        require(msg.sender == qredoWallet, "Not a qredo wallet");
+        IERC20Upgradeable(currency).safeTransferFrom(msg.sender, address(this), _optionProfit);
+        optionProfit = _optionProfit;
+
+        emit RedeemOptionPayout(msg.sender, _optionProfit);
+    }
+
+    /**
      * @notice Returns the number of investors
      */
     function numOfInvestors() external view returns (uint256) {
@@ -311,49 +356,16 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     }
 
     /**
-     * @notice After the fund is locked, distribute USDC into the Qredo wallet and 
-     * permissionless borrower poools of Clearpool protocol
+     * @dev Pause the product
      */
-    function distribute(
-        uint256 _optionRate, 
-        uint256[] calldata _yieldRates, 
-        address[] calldata _clearpools
-    ) external onlyManager onlyIssued {
-        require(!isDistributed, "Already distributed");
-        require(_yieldRates.length == _clearpools.length, "Should have the same length");
-        uint256 totalYieldRate = 0;
-        for (uint256 i = 0; i < _yieldRates.length; i++) {
-            totalYieldRate += _yieldRates[i];
-        }
-        require((totalYieldRate + _optionRate) <= 100, "Total percent should be equal or less than 100");
-        
-        // Transfer option amount to the Qredo wallet
-        if (_optionRate > 0) {
-            uint256 optionAmount = currentCapacity * _optionRate / 100;
-            IERC20Upgradeable(currency).transfer(qredoDeribit, optionAmount);
-        }
-
-        // Lend into the clearpool
-        for (uint256 i = 0; i < _clearpools.length; i++) {
-            if (_yieldRates[i] > 0) {
-                clearpools.push(_clearpools[i]);
-                uint256 yieldAmount = currentCapacity * _yieldRates[i] / 100;
-                IERC20Upgradeable(currency).approve(_clearpools[i], yieldAmount);
-                IPoolMaster(_clearpools[i]).provide(yieldAmount);
-            }
-        }
-        isDistributed = true;
-        emit Distribute(qredoDeribit, _optionRate, _clearpools, _yieldRates);
+    function pause() external onlyManager {
+        _pause();
     }
 
-    function redeemYield() external onlyManager onlyMature {
-        address[] memory _clearpools = clearpools;
-        require(_clearpools.length > 0, "No yield source");
-        for (uint256 i = 0; i < _clearpools.length; i++) {
-            uint256 cpTokenBal = IPoolMaster(_clearpools[i]).balanceOf(address(this));
-            IPoolMaster(_clearpools[i]).redeem(cpTokenBal);
-        }
-        isDistributed = false;
-        emit RedeemYield(_clearpools);
+    /**
+     * @dev Unpause the product
+     */
+    function unpause() external onlyManager {
+        _unpause();
     }
 }
