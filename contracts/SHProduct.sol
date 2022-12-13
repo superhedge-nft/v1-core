@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHNFT.sol";
 import "./interfaces/clearpool/IPoolMaster.sol";
+import "./interfaces/compound/ICErc20.sol";
 import "./libraries/Array.sol";
 
 contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
@@ -244,12 +245,34 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         }
     }
 
+    function distributeWithComp(
+        uint256 _yieldRate,
+        address _cErc20Pool
+    ) external onlyManager onlyIssued {
+        require(!isDistributed, "Already distributed");
+        require(_yieldRate <= 100, "Yield rate should be equal or less than 100");
+        uint256 optionRate = 100 - _yieldRate;
+
+        uint256 optionAmount;
+        if (optionRate > 0) {
+            optionAmount = currentCapacity * optionRate / 100;
+            IERC20Upgradeable(currency).transfer(qredoWallet, optionAmount);
+        }
+
+        // Lend into the compound cUSDC pool
+        uint256 yieldAmount = currentCapacity * _yieldRate / 100;
+        IERC20Upgradeable(currency).approve(_cErc20Pool, yieldAmount);
+        ICErc20(_cErc20Pool).mint(yieldAmount);
+        isDistributed = true;
+        
+        emit DistributeWithComp(qredoWallet, optionRate, _cErc20Pool, _yieldRate);
+    }
+
     /**
      * @notice After the fund is locked, distribute USDC into the Qredo wallet and
      * the lending pools to generate passive income
      */
-    function distribute(
-        uint256 _optionRate, 
+    function distributeWithClear(
         uint256[] calldata _yieldRates, 
         address[] calldata _clearpools
     ) external onlyManager onlyIssued {
@@ -259,11 +282,12 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         for (uint256 i = 0; i < _yieldRates.length; i++) {
             totalYieldRate += _yieldRates[i];
         }
-        require((totalYieldRate + _optionRate) <= 100, "Total percent should be equal or less than 100");
+        require(totalYieldRate <= 100, "Total yield rate should be equal or less than 100");
         
+        uint256 optionRate = 100 - totalYieldRate;
         // Transfer option amount to the Qredo wallet
-        if (_optionRate > 0) {
-            uint256 optionAmount = currentCapacity * _optionRate / 100;
+        if (optionRate > 0) {
+            uint256 optionAmount = currentCapacity * optionRate / 100;
             IERC20Upgradeable(currency).transfer(qredoWallet, optionAmount);
         }
 
@@ -277,7 +301,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
             }
         }
         isDistributed = true;
-        emit Distribute(qredoWallet, _optionRate, _clearpools, _yieldRates);
+        emit DistributeWithClear(qredoWallet, optionRate, _clearpools, _yieldRates);
     }
 
     function redeemYield() external onlyManager onlyMature {

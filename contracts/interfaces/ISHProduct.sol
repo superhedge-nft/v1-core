@@ -55,11 +55,18 @@ interface ISHProduct {
         uint256 _amount
     );
 
-    event Distribute(
+    event DistributeWithClear(
         address indexed _qredoDeribit,
         uint256 _optionRate,
         address[] _clearpools,
         uint256[] _yieldRates
+    );
+
+    event DistributeWithComp(
+        address indexed _qredoDeribit,
+        uint256 _optionRate,
+        address indexed _cErc20Pool,
+        uint256 _yieldRate
     );
 
     event RedeemYield(
