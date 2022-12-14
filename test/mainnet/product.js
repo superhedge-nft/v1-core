@@ -5,7 +5,8 @@ const { parseEther, parseUnits } = ethers.utils;
 
 describe("SHFactory test suite", function () {
     let shFactory, shProduct, shNFT, usdc;
-    let aurosPool, wintermutePool; // clearpool contracts
+    let aurosPool; // Clearpool contracts
+    let cUSDC; // Compound cUSDC contract
     let owner, user1, user2, whaleSigner;
 
     const whaleAddress = "0xDa9CE944a37d218c3302F6B82a094844C6ECEb17";
@@ -14,7 +15,7 @@ describe("SHFactory test suite", function () {
 
     // Clearpools
     const aurosPoolAddr = "0x3aeB3a8F0851249682A6a836525CDEeE5aA2A153";
-    const wintermutePoolAddr = "0xcb288b6d30738db7e3998159d192615769794b5b";
+    const cUSDCAddr = "0x39AA39c021dfbaE8faC545936693aC917d5E7563";
 
     before(async () => {
         [owner, user1, user2] = await ethers.getSigners();
@@ -38,9 +39,9 @@ describe("SHFactory test suite", function () {
             aurosPoolAddr
         );
         
-        wintermutePool = await ethers.getContractAt(
-            "IPoolMaster",
-            wintermutePoolAddr
+        cUSDC = await ethers.getContractAt(
+            "ICErc20",
+            cUSDCAddr
         );
 
         // unlock accounts
@@ -197,22 +198,34 @@ describe("SHFactory test suite", function () {
             console.log(await ethers.provider.getBalance(owner.address));
         });
 
-        it("Distribute", async () => {
-            const optionRate = 50;
-            const yieldRates = [20, 30];
-            const clearpools = [aurosPoolAddr, wintermutePoolAddr];
+        /* it("Distribute with Clearpool", async () => {
+            const optionRate = 20;
+            const yieldRates = [80];
+            const clearpools = [aurosPoolAddr];
             expect(
-                await shProduct.distribute(optionRate, yieldRates, clearpools)
-            ).to.emit(shProduct, "Distribute")
+                await shProduct.distributeWithClear(yieldRates, clearpools)
+            ).to.emit(shProduct, "DistributeWithClear")
             .withArgs(qredoWallet, optionRate, clearpools, yieldRates)
 
             console.log(await aurosPool.balanceOf(shProduct.address));
             console.log(await aurosPool.symbol());
 
-            console.log(await wintermutePool.balanceOf(shProduct.address));
-            console.log(await wintermutePool.symbol());
-
             console.log(await usdc.balanceOf(qredoWallet));
+            expect(await shProduct.isDistributed()).to.equal(true);
+        }); */
+
+        it("Distribute with Compound", async() => {
+            const optionRate = 20;
+            const yieldRate = 80;
+
+            expect(
+                await shProduct.distributeWithComp(yieldRate, cUSDCAddr)
+            ).to.emit(shProduct, "DistributeWithComp")
+            .withArgs(qredoWallet, optionRate, cUSDCAddr, yieldRate);
+            
+            console.log(await cUSDC.balanceOf(shProduct.address));
+            console.log(await usdc.balanceOf(qredoWallet));
+            expect(await shProduct.isDistributed()).to.equal(true);
         });
     });
 
@@ -221,7 +234,7 @@ describe("SHFactory test suite", function () {
             await shProduct.mature();
         });
 
-        it("Redeem option", async() => {
+        it("Redeem option from qredo wallet", async() => {
             const transferAmount = await usdc.balanceOf(qredoWallet);
             await usdc.connect(qredoSigner).approve(shProduct.address, transferAmount);
             expect(
@@ -229,10 +242,63 @@ describe("SHFactory test suite", function () {
             ).to.emit(shProduct, "RedeemOptionPayout").withArgs(qredoWallet, transferAmount);
         });
 
-        it("Redeem yield", async() => {
+        /* it("Redeem yield from Clearpool", async() => {
+            const clearpools = [aurosPoolAddr];
+
             expect(
-                await shProduct.redeemYield()
-            ).to.emit(shProduct, "RedeemYield");
+                await shProduct.redeemYieldFromClear(clearpools)
+            ).to.emit(shProduct, "RedeemYieldFromClear");
+        }); */
+
+        it("Redeem yield from Compound", async() => {
+            expect(
+                await shProduct.redeemYieldFromComp(cUSDCAddr)
+            ).to.emit(shProduct, "RedeemYieldFromComp").withArgs(cUSDCAddr);
+            expect(await shProduct.isDistributed()).to.equal(false);
+        });
+    });
+
+    describe("Pausable", () => {
+        const productName = "BTC Defensive Spread";
+        const issuanceCycle = {
+            coupon: 10,
+            strikePrice1: 25000,
+            strikePrice2: 20000,
+            strikePrice3: 0,
+            strikePrice4: 0,
+            uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
+        };
+
+        it("Pause the products", async() => {
+            await shProduct.pause();
+            expect(await shProduct.paused()).to.equal(true);
+
+            expect(await shFactory.createProduct(
+                productName,
+                "BTC/USD",
+                usdc.address,
+                owner.address,
+                shNFT.address,
+                qredoWallet,
+                1000000,
+                issuanceCycle
+            )).to.be.emit(shFactory, "ProductCreated");
+        });
+
+        it("Unpause the products", async() => {
+            await shProduct.unpause();
+            expect(await shProduct.paused()).to.equal(false);
+
+            await expect(shFactory.createProduct(
+                productName,
+                "BTC/USD",
+                usdc.address,
+                owner.address,
+                shNFT.address,
+                qredoWallet,
+                1000000,
+                issuanceCycle
+            )).to.be.revertedWith("Product already exists");
         });
     });
 });

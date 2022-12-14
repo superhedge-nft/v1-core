@@ -12,5 +12,5 @@ interface ICErc20 {
 
     function redeemUnderlying(uint) external returns (uint);
 
-    function balanceOf(address) external returns (uint256);
+    function balanceOf(address) external view returns (uint256);
 }

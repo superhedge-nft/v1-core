@@ -112,7 +112,6 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
 
     /// @notice Event emitted when new issuance cycle is set
     event IssuanceCycleSet(
-        address indexed product,
         uint256 coupon,
         uint256 strikePrice1,
         uint256 strikePrice2,
@@ -146,7 +145,7 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
         shNFT = _shNFT;
         issuanceCycle = _issuanceCycle;
 
-        setIssuanceCycle(_issuanceCycle);
+        _setIssuanceCycle(_issuanceCycle);
     }
     
     modifier onlyWhitelisted() {
@@ -254,12 +253,17 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
      */
     function setIssuanceCycle(
         DataTypes.IssuanceCycle memory _issuanceCycle
-    ) public onlyManager {
+    ) external onlyManager {
         require(status != Status.Issued, "Already issued status");
+        _setIssuanceCycle(_issuanceCycle);
+    }
+    
+    function _setIssuanceCycle(
+        DataTypes.IssuanceCycle memory _issuanceCycle
+    ) internal {
         issuanceCycle = _issuanceCycle;
 
         emit IssuanceCycleSet(
-            address(this),
             _issuanceCycle.coupon, 
             _issuanceCycle.strikePrice1, 
             _issuanceCycle.strikePrice2,
@@ -268,7 +272,7 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
             _issuanceCycle.uri
         );
     }
-    
+
     /**
      * @dev Deposits the USDC into the structured product and mint ERC1155 NFT
      * @param _amount is the amount of USDC to deposit
@@ -359,14 +363,14 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
 
     function redeemYieldFromComp(
         address _cErc20Pool
-    ) external onlyManager onlyMature returns(uint256) {
+    ) external onlyManager onlyMature {
+        require(isDistributed, "Not distributed");
         uint256 cTokenAmount = ICErc20(_cErc20Pool).balanceOf(address(this));
         // Retrieve your asset based on a cToken amount
-        uint256 redeemResult = ICErc20(_cErc20Pool).redeem(cTokenAmount);
+        ICErc20(_cErc20Pool).redeem(cTokenAmount);
         isDistributed = false;
+
         emit RedeemYieldFromComp(_cErc20Pool);
-        
-        return redeemResult;
     }
 
     /**
@@ -407,12 +411,14 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
     function redeemYieldFromClear(
         address[] calldata _clearpools
     ) external onlyManager onlyMature {
+        require(isDistributed, "Not distributed");
         require(_clearpools.length > 0, "No yield source");
         for (uint256 i = 0; i < _clearpools.length; i++) {
             uint256 cpTokenBal = IPoolMaster(_clearpools[i]).balanceOf(address(this));
             IPoolMaster(_clearpools[i]).redeem(cpTokenBal);
         }
         isDistributed = false;
+        
         emit RedeemYieldFromClear(_clearpools);
     }
 

@@ -5,9 +5,9 @@ const { parseUnits } = ethers.utils;
 
 describe("SHFactory test suite", function () {
   let shFactory, shProduct, shNFT, mockUSDC;
-  let owner, qredoDeribit
+  let owner, qredoWallet
   before(async () => {
-    [owner, qredoDeribit, user1, user2] = await ethers.getSigners();
+    [owner, qredoWallet, user1, user2] = await ethers.getSigners();
 
     const SHFactory = await ethers.getContractFactory("SHFactory");
     shFactory = await upgrades.deployProxy(SHFactory, []);
@@ -42,7 +42,7 @@ describe("SHFactory test suite", function () {
           mockUSDC.address,
           owner.address,
           shNFT.address,
-          qredoDeribit.address,
+          qredoWallet.address,
           2500,
           issuanceCycle
         )
@@ -56,7 +56,7 @@ describe("SHFactory test suite", function () {
         mockUSDC.address,
         owner.address,
         shNFT.address,
-        qredoDeribit.address,
+        qredoWallet.address,
         1000000,
         issuanceCycle
       )).to.be.emit(shFactory, "ProductCreated");
@@ -202,16 +202,14 @@ describe("SHFactory test suite", function () {
     it("Reverts if the product status is already 'issued'", async () => {
       await shProduct.fundLock();
       await shProduct.issuance();
-      await expect(shFactory.setIssuanceCycle(
-        shProduct.address,
+      await expect(shProduct.setIssuanceCycle(
         newIssuanceCycle
       )).to.be.revertedWith("Already issued status");
     });
 
     it("set successfully", async () => {
       await shProduct.mature();
-      expect(await shFactory.setIssuanceCycle(
-        shProduct.address,
+      expect(await shProduct.setIssuanceCycle(
         newIssuanceCycle
       )).to.be.emit(shFactory, "IssuanceCycleSet");
     });
