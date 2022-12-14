@@ -69,8 +69,12 @@ interface ISHProduct {
         uint256 _yieldRate
     );
 
-    event RedeemYield(
+    event RedeemYieldFromClear(
         address[] _clearpools
+    );
+    
+    event RedeemYieldFromComp(
+        address _cErc20Pool
     );
 
     function maxCapacity() external view returns (uint256);

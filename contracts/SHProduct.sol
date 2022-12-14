@@ -39,7 +39,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
 
     IERC20Upgradeable public currency;
     bool public isDistributed;
-    address[] public clearpools;
+
     /// @notice restricting access to the gelato automation functions
     mapping(address => bool) public whitelisted;
     address public dedicatedMsgSender;
@@ -268,6 +268,18 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         emit DistributeWithComp(qredoWallet, optionRate, _cErc20Pool, _yieldRate);
     }
 
+    function redeemYieldFromComp(
+        address _cErc20Pool
+    ) external onlyManager onlyMature returns(uint256) {
+        uint256 cTokenAmount = ICErc20(_cErc20Pool).balanceOf(address(this));
+        // Retrieve your asset based on a cToken amount
+        uint256 redeemResult = ICErc20(_cErc20Pool).redeem(cTokenAmount);
+        isDistributed = false;
+        emit RedeemYieldFromComp(_cErc20Pool);
+        
+        return redeemResult;
+    }
+
     /**
      * @notice After the fund is locked, distribute USDC into the Qredo wallet and
      * the lending pools to generate passive income
@@ -294,7 +306,6 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         // Lend into the clearpool
         for (uint256 i = 0; i < _clearpools.length; i++) {
             if (_yieldRates[i] > 0) {
-                clearpools.push(_clearpools[i]);
                 uint256 yieldAmount = currentCapacity * _yieldRates[i] / 100;
                 IERC20Upgradeable(currency).approve(_clearpools[i], yieldAmount);
                 IPoolMaster(_clearpools[i]).provide(yieldAmount);
@@ -304,16 +315,18 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         emit DistributeWithClear(qredoWallet, optionRate, _clearpools, _yieldRates);
     }
 
-    function redeemYield() external onlyManager onlyMature {
-        address[] memory _clearpools = clearpools;
+    function redeemYieldFromClear(
+        address[] calldata _clearpools
+    ) external onlyManager onlyMature {
         require(_clearpools.length > 0, "No yield source");
         for (uint256 i = 0; i < _clearpools.length; i++) {
             uint256 cpTokenBal = IPoolMaster(_clearpools[i]).balanceOf(address(this));
             IPoolMaster(_clearpools[i]).redeem(cpTokenBal);
         }
         isDistributed = false;
-        emit RedeemYield(_clearpools);
+        emit RedeemYieldFromClear(_clearpools);
     }
+
 
     /**
      * @dev Transfers option profit from a qredo wallet, called by an owner
