@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/ISHNFT.sol";
 import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHFactory.sol";
+import "./libraries/DataTypes.sol";
 import "./SHProduct.sol";
 
 /**
@@ -28,17 +29,6 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
         uint256 maxSupply
     );
 
-    /// @notice Event emitted when new issuance cycle is set
-    event IssuanceCycleSet(
-        address indexed product,
-        uint256 coupon,
-        uint256 strikePrice1,
-        uint256 strikePrice2,
-        uint256 strikePrice3,
-        uint256 strikePrice4,
-        string uri
-    );
-
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
@@ -52,22 +42,24 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
      * @param _underlying is the underlying asset label
      * @param _currency principal asset, USDC address
      * @param _manager manager of the product
-     * @param _qredo_deribit is the wallet address of Deribit trading platform
+     * @param _qredoWallet is the wallet address of Qredo
      * @param _maxCapacity is the maximum USDC amount that this product can accept
      * @param _issuanceCycle is the struct variable with issuance date, 
         maturiy date, coupon, strike1 and strke2
      */
     function createProduct(
-        string calldata _name,
-        string calldata _underlying,
+        string memory _name,
+        string memory _underlying,
         IERC20Upgradeable _currency,
         address _manager,
         address _shNFT,
-        address _qredo_deribit,
+        address _qredoWallet,
         uint256 _maxCapacity,
-        ISHProduct.IssuanceCycle calldata _issuanceCycle        
+        DataTypes.IssuanceCycle memory _issuanceCycle        
     ) external onlyOwner {
-        require(getProduct[_name] == address(0), "Product already exists");
+        require(getProduct[_name] == address(0) || ISHProduct(getProduct[_name]).paused() == true, 
+            "Product already exists");
+
         require((_maxCapacity % 1000) == 0, "Max capacity must be whole-number thousands");
 
         // create new product contract
@@ -78,7 +70,7 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
             _currency,
             _manager,
             _shNFT, 
-            _qredo_deribit, 
+            _qredoWallet, 
             _maxCapacity, 
             _issuanceCycle
         );
@@ -89,19 +81,8 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
         products.push(productAddr);
         // add NFT minter role
         ISHNFT(_shNFT).addMinter(productAddr);
-        _setIssuanceCycle(productAddr, _issuanceCycle);
         
         emit ProductCreated(productAddr, _name, _underlying, _maxCapacity);
-    }
-
-    /**
-     * @notice Set new issuance cycle by owner
-     */
-    function setIssuanceCycle(
-        address _product, 
-        ISHProduct.IssuanceCycle calldata _issuanceCycle
-    ) external onlyOwner {
-        _setIssuanceCycle(_product, _issuanceCycle);
     }
 
     /**
@@ -109,26 +90,5 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
      */
     function numOfProducts() external view returns (uint256) {
         return products.length;
-    }
-
-    /**
-     * @notice Internal function to set issuance cycle
-     */
-    function _setIssuanceCycle(
-        address _product,
-        ISHProduct.IssuanceCycle memory _issuanceCycle
-    ) internal {
-        require(isProduct[_product], "Product does not exist");
-        ISHProduct(_product).setIssuanceCycle(_issuanceCycle);
-
-        emit IssuanceCycleSet(
-            _product,
-            _issuanceCycle.coupon, 
-            _issuanceCycle.strikePrice1, 
-            _issuanceCycle.strikePrice2,
-            _issuanceCycle.strikePrice3,
-            _issuanceCycle.strikePrice4,
-            _issuanceCycle.uri
-        );
     }
 }

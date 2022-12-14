@@ -10,11 +10,26 @@ import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHNFT.sol";
 import "./interfaces/clearpool/IPoolMaster.sol";
 import "./interfaces/compound/ICErc20.sol";
+import "./libraries/DataTypes.sol";
 import "./libraries/Array.sol";
 
-contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
+contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using Array for address[];
+
+    struct UserInfo {
+        uint256 coupon;
+        uint256 optionPayout;
+    }
+
+    /// @notice Enum representing product status
+    enum Status {
+        Pending,
+        Accepted,
+        Locked,
+        Issued,
+        Mature
+    }
 
     string public name;
     string public underlying;
@@ -31,7 +46,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     uint256 public prevTokenId;
 
     Status public status;
-    IssuanceCycle public issuanceCycle;
+    DataTypes.IssuanceCycle public issuanceCycle;
     
     mapping(address => UserInfo) public userInfo;
 
@@ -44,6 +59,68 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     mapping(address => bool) public whitelisted;
     address public dedicatedMsgSender;
     
+    event Deposit(
+        address indexed _from,
+        uint256 _amount,
+        uint256 _currentTokenId,
+        uint256 _supply
+    );
+
+    event WithdrawPrincipal(
+        address indexed _to,
+        uint256 _amount,
+        uint256 _currentTokenId,
+        uint256 _amountToBurn
+    );
+
+    event WithdrawCoupon(
+        address indexed _to,
+        uint256 _amount
+    );
+
+    event WithdrawOption(
+        address indexed _to,
+        uint256 _amount
+    );
+
+    event RedeemOptionPayout(
+        address indexed _from,
+        uint256 _amount
+    );
+
+    event DistributeWithClear(
+        address indexed _qredoDeribit,
+        uint256 _optionRate,
+        address[] _clearpools,
+        uint256[] _yieldRates
+    );
+
+    event DistributeWithComp(
+        address indexed _qredoDeribit,
+        uint256 _optionRate,
+        address indexed _cErc20Pool,
+        uint256 _yieldRate
+    );
+
+    event RedeemYieldFromClear(
+        address[] _clearpools
+    );
+    
+    event RedeemYieldFromComp(
+        address _cErc20Pool
+    );
+
+    /// @notice Event emitted when new issuance cycle is set
+    event IssuanceCycleSet(
+        address indexed product,
+        uint256 coupon,
+        uint256 strikePrice1,
+        uint256 strikePrice2,
+        uint256 strikePrice3,
+        uint256 strikePrice4,
+        string uri
+    );
+
     function initialize(
         string memory _name,
         string memory _underlying,
@@ -52,7 +129,7 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         address _shNFT,
         address _qredoWallet,
         uint256 _maxCapacity,
-        IssuanceCycle memory _issuanceCycle
+        DataTypes.IssuanceCycle memory _issuanceCycle
     ) public initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -68,6 +145,8 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
         currency = _currency;
         shNFT = _shNFT;
         issuanceCycle = _issuanceCycle;
+
+        setIssuanceCycle(_issuanceCycle);
     }
     
     modifier onlyWhitelisted() {
@@ -171,13 +250,23 @@ contract SHProduct is ISHProduct, OwnableUpgradeable, ReentrancyGuardUpgradeable
     }
 
     /**
-     * @dev Set new issuance cycle, called by a factory contract.
+     * @dev Set new issuance cycle, called by only manager
      */
     function setIssuanceCycle(
-        IssuanceCycle calldata _issuanceCycle
-    ) external onlyOwner {
+        DataTypes.IssuanceCycle memory _issuanceCycle
+    ) public onlyManager {
         require(status != Status.Issued, "Already issued status");
         issuanceCycle = _issuanceCycle;
+
+        emit IssuanceCycleSet(
+            address(this),
+            _issuanceCycle.coupon, 
+            _issuanceCycle.strikePrice1, 
+            _issuanceCycle.strikePrice2,
+            _issuanceCycle.strikePrice3,
+            _issuanceCycle.strikePrice4,
+            _issuanceCycle.uri
+        );
     }
     
     /**
