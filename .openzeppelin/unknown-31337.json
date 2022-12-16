@@ -1,8 +1,8 @@
 {
   "manifestVersion": "3.2",
   "admin": {
-    "address": "0x7A28cf37763279F774916b85b5ef8b64AB421f79",
-    "txHash": "0xe3dd19eeb85267d9c8246bb2e97a69d364e33dcd483c28804405b55ffd2336dc"
+    "address": "0x2BB8B93F585B43b06F3d523bf30C203d3B6d4BD4",
+    "txHash": "0x207ddd3b83214405e6183d506b682bb22f655d93f0a387eb7a09b41c32a64c04"
   },
   "proxies": [
     {
@@ -206,11 +206,6 @@
       "kind": "transparent"
     },
     {
-      "address": "0xB7ca895F81F20e05A5eb11B05Cbaab3DAe5e23cd",
-      "txHash": "0xb7ab019c4282566a1fcb14f94253d9a549f2ed616a9e968f39b351ed485a65d4",
-      "kind": "transparent"
-    },
-    {
       "address": "0x2BB8B93F585B43b06F3d523bf30C203d3B6d4BD4",
       "txHash": "0x2093756b7e94442e4a6c8130fa4807acc6a51d76077f5e48ec97ef6fbab4d3e2",
       "kind": "transparent"
@@ -238,6 +233,16 @@
     {
       "address": "0x1D3EDBa836caB11C26A186873abf0fFeB8bbaE63",
       "txHash": "0x58a8eca2ec967dc43f445f82009a2e39a422533e03d5bdecadcd4d258261d2af",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xB7ca895F81F20e05A5eb11B05Cbaab3DAe5e23cd",
+      "txHash": "0xb89bc72fc8e056759b4b5f9b1461456a83265e02c92e47594c5295c18accb2f4",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x2d13826359803522cCe7a4Cfa2c1b582303DD0B4",
+      "txHash": "0xdfabe51278d9a416eff844ce4d700ba89191619b05d7431cfcc4df57b3560845",
       "kind": "transparent"
     }
   ],
@@ -394,8 +399,8 @@
       }
     },
     "a9868e74e4e9eff4e694a123b62a8fce1699def5772dcd7244b2d860e4f28547": {
-      "address": "0xB7ca895F81F20e05A5eb11B05Cbaab3DAe5e23cd",
-      "txHash": "0x8ae85aef5e6a69ae8d232b0e96807732e3a31c3ff47c5c946b78356371688faf",
+      "address": "0xd0EC100F1252a53322051a95CF05c32f0C174354",
+      "txHash": "0x466fd13a8aa50e1958d46ebcd279abfb73fbdd1cd6231c2c7d605e078544ce9e",
       "layout": {
         "solcVersion": "0.8.14",
         "storage": [
@@ -1311,8 +1316,8 @@
       }
     },
     "9500136fc405e27a34dcd4df9e15b80c93338c6dd33d6af48ee1b48aff335fb6": {
-      "address": "0x6A47346e722937B60Df7a1149168c0E76DD6520f",
-      "txHash": "0xca0a49a67c20b544f9ced768c638a318541a5060a3b8c47c3d5f399a08c13d0e",
+      "address": "0x7A28cf37763279F774916b85b5ef8b64AB421f79",
+      "txHash": "0x8e7c847c82c2e3c1743560fa0bc95d3851206e2097970092f39745cf95caa434",
       "layout": {
         "solcVersion": "0.8.14",
         "storage": [
