@@ -197,7 +197,7 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
         if (optionProfit > 0) {
             for (uint256 i = 0; i < investors.length; i++) {
                 uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
-                userInfo[msg.sender].optionPayout += tokenSupply * optionProfit / totalSupply;
+                userInfo[investors[i]].optionPayout += tokenSupply * optionProfit / totalSupply;
             }
         }
         // Then update status
@@ -219,10 +219,10 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
         // issuanceCycle.issuanceDate = block.timestamp;
         // burn the token of the expired issuance
         for (uint256 i = 0; i < investors.length; i++) {
-            uint256 prevSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
+            uint256 prevSupply = ISHNFT(shNFT).balanceOf(investors[i], prevTokenId);
             if (prevSupply > 0) {
-                ISHNFT(shNFT).burn(msg.sender, prevTokenId, prevSupply);
-                ISHNFT(shNFT).mint(msg.sender, currentTokenId, prevSupply, issuanceCycle.uri);
+                ISHNFT(shNFT).burn(investors[i], prevTokenId, prevSupply);
+                ISHNFT(shNFT).mint(investors[i], currentTokenId, prevSupply, issuanceCycle.uri);
             }
             uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
             if (tokenSupply == 0 && userInfo[investors[i]].coupon == 0 && userInfo[investors[i]].optionPayout == 0) {
@@ -446,24 +446,24 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
      * Before auto-rolling or fund lock, users can have both tokens so total supply is the sum of 
      * previous supply and current supply
      */
-    function principalBalance() external view returns (uint256) {
-        uint256 prevSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
-        uint256 tokenSupply = ISHNFT(shNFT).balanceOf(msg.sender, currentTokenId);
+    function principalBalance(address _user) external view returns (uint256) {
+        uint256 prevSupply = ISHNFT(shNFT).balanceOf(_user, prevTokenId);
+        uint256 tokenSupply = ISHNFT(shNFT).balanceOf(_user, currentTokenId);
         return _convertTokenToCurrency(prevSupply + tokenSupply);
     }
 
     /**
      * @notice Returns the user's coupon payout
      */
-    function couponBalance() external view returns (uint256) {
-        return userInfo[msg.sender].coupon;
+    function couponBalance(address _user) external view returns (uint256) {
+        return userInfo[_user].coupon;
     }
 
     /**
      * @notice Returns the user's option payout
      */
-    function optionBalance() external view returns (uint256) {
-        return userInfo[msg.sender].optionPayout;
+    function optionBalance(address _user) external view returns (uint256) {
+        return userInfo[_user].optionPayout;
     }
 
     /**
