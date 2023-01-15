@@ -28,7 +28,7 @@ async function main() {
     const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
     const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; // Qredo Metamask Institutional
 
-    const productName = "BTC Defensive Spread"
+    const productName = "BTC Bullish Spread"
     const issuanceCycle = {
         coupon: 10,
         strikePrice1: 25000,
@@ -41,7 +41,7 @@ async function main() {
     // Create new product
     const tx = await shFactory.createProduct(
         productName, // product name
-        "BTC/USD", // underlying
+        "BTC/USDC", // underlying
         usdc, // USDC address on Goerli testnet
         manager,
         shNFT.address, // ERC1155 NFT address
