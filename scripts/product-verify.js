@@ -6,32 +6,34 @@
 const hre = require("hardhat");
 
 async function main() {
-    const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
-    const qredoWallet = "0xBA6Aa0Ad8c3ADa57046920135bD323d02dF7E6Ef";
-    const maxCapacity = 1000000;
+  const usdc = "0x07865c6E87B9F70255377e024ace6630C1Eaa37F";
 
-    const issuanceCycle = {
-        coupon: 10,
-        strikePrice1: 25000,
-        strikePrice2: 20000,
-        strikePrice3: 0,
-        strikePrice4: 0,
-        uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
-    }
+  const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
+  const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A";
+  const maxCapacity = 1000000;
 
-    await hre.run("verify:verify", {
-        address: "0xA159624e50e099d896675c7362b5AD11CEa9fD45",
-        constructorArguments: [
-          "BTC Defensive Spread", // product name
-          "BTC/USD", // underlying symbol
-          "0x366B9195CBB88080F456e602B2dAc09fC80311BC", // mockUSDC
-          manager, // manager
-          "0x6B72fE8cA151799D814ECbd10E39854617ca8266", // NFT address
-          qredoWallet,
-          maxCapacity,
-          issuanceCycle
-        ],
-    });
+  const issuanceCycle = {
+      coupon: 10,
+      strikePrice1: 25000,
+      strikePrice2: 20000,
+      strikePrice3: 0,
+      strikePrice4: 0,
+      uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
+  }
+
+  await hre.run("verify:verify", {
+      address: "0x380f0103fA96c2EF81161B19a90D90A99ba36a79",
+      constructorArguments: [
+        "BTC Bullish Spread", // product name
+        "BTC/USDC", // underlying symbol
+        usdc, // USDC address
+        manager, // manager
+        "0x0173fA97C69a2EB209D12a77bF376772dD1C5C1F", // NFT address
+        qredoWallet,
+        maxCapacity,
+        issuanceCycle
+      ],
+  });
 }
 
 // We recommend this pattern to be able to use async/await everywhere
