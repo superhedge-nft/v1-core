@@ -4,6 +4,8 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
+import "./libraries/ERC1155EnumerableStorage.sol";
 
 /**
  * @notice NFT Contract relevant to product issuance, inherting ERC1155 standard contract
@@ -75,15 +77,6 @@ contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
      */
     function currentTokenID() public view returns (uint256) {
         return tokenIds.current();
-    }
-
-    /**
-     * @dev Returns the total quantity for a token ID
-     * @param _id uint256 ID of the token to query
-     * @return amount of token in existence
-     */
-    function totalSupply(uint256 _id) public view returns (uint256) {
-        return tokenSupply[_id];
     }
 
     /**
@@ -196,5 +189,122 @@ contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
     {
         _tokenURIs[tokenId] = tokenURI;
         emit URI(uri(tokenId), tokenId);
+    }
+
+    /** ============= Customized ============= **/
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
+
+    /**
+     * @dev IERC1155Enumerable
+     */
+    function totalSupply(uint256 _id)
+        public
+        view
+        virtual
+        returns (uint256)
+    {
+        return ERC1155EnumerableStorage.layout().totalSupply[_id];
+    }
+
+    /**
+     * @dev IERC1155Enumerable
+     */
+    function totalHolders(uint256 _id)
+        public
+        view
+        virtual
+        returns (uint256)
+    {
+        return ERC1155EnumerableStorage.layout().accountsByToken[_id].length();
+    }
+
+    /**
+     * @dev IERC1155Enumerable
+     */
+    function accountsByToken(uint256 _id)
+        public
+        view
+        virtual
+        returns (address[] memory)
+    {
+        EnumerableSetUpgradeable.AddressSet storage accounts = ERC1155EnumerableStorage
+            .layout()
+            .accountsByToken[_id];
+
+        address[] memory addresses = new address[](accounts.length());
+
+        for (uint256 i; i < accounts.length(); i++) {
+            addresses[i] = accounts.at(i);
+        }
+
+        return addresses;
+    }
+
+    /**
+     * @dev IERC1155Enumerable
+     */
+    function tokensByAccount(address _account)
+        public
+        view
+        virtual
+        returns (uint256[] memory)
+    {
+        EnumerableSetUpgradeable.UintSet storage tokens = ERC1155EnumerableStorage
+            .layout()
+            .tokensByAccount[_account];
+
+        uint256[] memory ids = new uint256[](tokens.length());
+
+        for (uint256 i; i < tokens.length(); i++) {
+            ids[i] = tokens.at(i);
+        }
+
+        return ids;
+    }
+
+    /**
+     * @notice ERC1155 hook: update aggregate values
+     */
+    function _beforeTokenTransfer(
+        address operator,
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) internal virtual override {
+        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+
+        if (from != to) {
+            ERC1155EnumerableStorage.Layout storage l = ERC1155EnumerableStorage
+                .layout();
+            mapping(uint256 => EnumerableSetUpgradeable.AddressSet)
+                storage tokenAccounts = l.accountsByToken;
+            EnumerableSetUpgradeable.UintSet storage fromTokens = l.tokensByAccount[from];
+            EnumerableSetUpgradeable.UintSet storage toTokens = l.tokensByAccount[to];
+
+            for (uint256 i; i < ids.length; i++) {
+                uint256 amount = amounts[i];
+
+                if (amount > 0) {
+                    uint256 id = ids[i];
+
+                    if (from == address(0)) {
+                        l.totalSupply[id] += amount;
+                    } else if (balanceOf(from, id) == amount) {
+                        tokenAccounts[id].remove(from);
+                        fromTokens.remove(id);
+                    }
+
+                    if (to == address(0)) {
+                        l.totalSupply[id] -= amount;
+                    } else if (balanceOf(to, id) == 0) {
+                        tokenAccounts[id].add(to);
+                        toTokens.add(id);
+                    }
+                }
+            }
+        }
     }
 }

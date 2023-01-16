@@ -29,4 +29,10 @@ interface ISHNFT {
     function addMinter(address _account) external;
 
     function setTokenURI(uint256 _id, string calldata _uri) external;
+
+    function accountsByToken(uint256 _id) external view returns (address[] memory);
+
+    function tokensByAccount(address _account) external view returns (uint256[] memory);
+
+    function totalHolders(uint256 _id) external view returns (uint256);
 }
