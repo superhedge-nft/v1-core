@@ -25,7 +25,7 @@ describe("SHFactory test suite", function () {
   });
 
   describe("Create product", () => {
-    const productName = "BTC Defensive Spread";
+    const productName = "BTC Bullish Spread";
     const issuanceCycle = {
       coupon: 10,
       strikePrice1: 25000,
@@ -38,7 +38,7 @@ describe("SHFactory test suite", function () {
       await expect(
         shFactory.createProduct(
           productName,
-          "BTC/USD",
+          "BTC/USDC",
           mockUSDC.address,
           owner.address,
           shNFT.address,
@@ -52,7 +52,7 @@ describe("SHFactory test suite", function () {
     it("Successfully created", async () => {
       expect(await shFactory.createProduct(
         productName,
-        "BTC/USD",
+        "BTC/USDC",
         mockUSDC.address,
         owner.address,
         shNFT.address,

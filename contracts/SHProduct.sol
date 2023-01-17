@@ -287,7 +287,7 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
         currentCapacity += _amount;
         require((maxCapacity * 10 ** decimals) >= currentCapacity, "Product is full");
 
-        IERC20Upgradeable(currency).safeTransferFrom(msg.sender, address(this), _amount);
+        currency.safeTransferFrom(msg.sender, address(this), _amount);
         ISHNFT(shNFT).mint(msg.sender, currentTokenId, supply, issuanceCycle.uri);
 
         investors.push(msg.sender);
@@ -304,7 +304,7 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
         uint256 principal = _convertTokenToCurrency(tokenSupply);
         require(totalBalance() >= principal, "Insufficient balance");
         
-        IERC20Upgradeable(currency).safeTransfer(msg.sender, principal);
+        currency.safeTransfer(msg.sender, principal);
         ISHNFT(shNFT).burn(msg.sender, prevTokenId, tokenSupply);
         
         if (userInfo[msg.sender].coupon == 0 && userInfo[msg.sender].optionPayout == 0) {
@@ -321,7 +321,7 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
         require(totalBalance() >= userInfo[msg.sender].coupon,
             "Insufficient balance");
         if (userInfo[msg.sender].coupon > 0) {
-            IERC20Upgradeable(currency).safeTransfer(msg.sender, userInfo[msg.sender].coupon);
+            currency.safeTransfer(msg.sender, userInfo[msg.sender].coupon);
             emit WithdrawCoupon(msg.sender, userInfo[msg.sender].coupon);
         }
     }
@@ -333,7 +333,7 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
         require(totalBalance() >= userInfo[msg.sender].optionPayout,
             "Insufficient balance");
         if (userInfo[msg.sender].optionPayout > 0) {
-            IERC20Upgradeable(currency).safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
+            currency.safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
             emit WithdrawOption(msg.sender, userInfo[msg.sender].optionPayout);
         }
     }
@@ -349,12 +349,12 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
         uint256 optionAmount;
         if (optionRate > 0) {
             optionAmount = currentCapacity * optionRate / 100;
-            IERC20Upgradeable(currency).transfer(qredoWallet, optionAmount);
+            currency.transfer(qredoWallet, optionAmount);
         }
 
         // Lend into the compound cUSDC pool
         uint256 yieldAmount = currentCapacity * _yieldRate / 100;
-        IERC20Upgradeable(currency).approve(_cErc20Pool, yieldAmount);
+        currency.approve(_cErc20Pool, yieldAmount);
         ICErc20(_cErc20Pool).mint(yieldAmount);
         isDistributed = true;
         
@@ -393,14 +393,14 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
         // Transfer option amount to the Qredo wallet
         if (optionRate > 0) {
             uint256 optionAmount = currentCapacity * optionRate / 100;
-            IERC20Upgradeable(currency).transfer(qredoWallet, optionAmount);
+            currency.transfer(qredoWallet, optionAmount);
         }
 
         // Lend into the clearpool
         for (uint256 i = 0; i < _clearpools.length; i++) {
             if (_yieldRates[i] > 0) {
                 uint256 yieldAmount = currentCapacity * _yieldRates[i] / 100;
-                IERC20Upgradeable(currency).approve(_clearpools[i], yieldAmount);
+                currency.approve(_clearpools[i], yieldAmount);
                 IPoolMaster(_clearpools[i]).provide(yieldAmount);
             }
         }
@@ -428,7 +428,7 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
      */
     function redeemOptionPayout(uint256 _optionProfit) external onlyMature {
         require(msg.sender == qredoWallet, "Not a qredo wallet");
-        IERC20Upgradeable(currency).safeTransferFrom(msg.sender, address(this), _optionProfit);
+        currency.safeTransferFrom(msg.sender, address(this), _optionProfit);
         optionProfit = _optionProfit;
 
         emit RedeemOptionPayout(msg.sender, _optionProfit);
@@ -470,7 +470,7 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
      * @notice Returns the product's total USDC balance
      */
     function totalBalance() public view returns (uint256) {
-        return IERC20Upgradeable(currency).balanceOf(address(this));
+        return currency.balanceOf(address(this));
     }
 
     /**
