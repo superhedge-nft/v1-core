@@ -24,8 +24,6 @@ contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
     mapping(uint256 => string) private _tokenURIs;
     /// @notice Mapping from token ID to owner address
     mapping(uint256 => address) public creators;
-    /// @notice Mapping from token ID to supply
-    mapping(uint256 => uint256) public tokenSupply;
 
     /// @notice Owner role for contract deployer
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
@@ -101,8 +99,6 @@ contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
         }
         _mint(_to, _id, _amount, bytes(""));
 
-        tokenSupply[_id] += _amount;
-
         emit Mint(_to, _id, _amount, _uri);
     }
 
@@ -119,7 +115,6 @@ contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
     ) external onlyRole(MINTER_ROLE) {
         delete creators[_id];
         _burn(_from, _id, _amount);
-        tokenSupply[_id] -= _amount;
 
         emit Burn(_from, _id, _amount);
     }
