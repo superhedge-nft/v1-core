@@ -50,7 +50,7 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
     
     mapping(address => UserInfo) public userInfo;
 
-    address[] public investors;
+    // address[] public investors;
 
     IERC20Upgradeable public currency;
     bool public isDistributed;
@@ -69,8 +69,10 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
     event WithdrawPrincipal(
         address indexed _to,
         uint256 _amount,
+        uint256 _prevTokenId,
+        uint256 _prevSupply,
         uint256 _currentTokenId,
-        uint256 _amountToBurn
+        uint256 _currentSupply
     );
 
     event WithdrawCoupon(
@@ -118,6 +120,12 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
         uint256 strikePrice3,
         uint256 strikePrice4,
         string uri
+    );
+
+    event FundAccept(
+        uint256 _optionProfit,
+        uint256 _prevTokenId,
+        uint256 _currentTokenId
     );
 
     function initialize(
@@ -194,19 +202,21 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
     function fundAccept() external whenNotPaused onlyWhitelisted {
         // First, distribute option profit to the token holders.
         uint256 totalSupply = ISHNFT(shNFT).totalSupply(currentTokenId);
+        address[] memory totalHolders = ISHNFT(shNFT).accountsByToken(currentTokenId);
         if (optionProfit > 0) {
-            for (uint256 i = 0; i < investors.length; i++) {
-                uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
-                userInfo[investors[i]].optionPayout += tokenSupply * optionProfit / totalSupply;
+            for (uint256 i = 0; i < totalHolders.length; i++) {
+                uint256 tokenSupply = ISHNFT(shNFT).balanceOf(totalHolders[i], currentTokenId);
+                userInfo[totalHolders[i]].optionPayout += tokenSupply * optionProfit / totalSupply;
             }
         }
         // Then update status
         status = Status.Accepted;
-        currentCapacity = 0;
         prevTokenId = currentTokenId;
 
         ISHNFT(shNFT).tokenIdIncrement();
         currentTokenId = ISHNFT(shNFT).currentTokenID();
+
+        emit FundAccept(optionProfit, prevTokenId, currentTokenId);
     }
 
     function fundLock() external whenNotPaused onlyWhitelisted {
@@ -217,16 +227,13 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
         require(status == Status.Locked, "Fund is not locked");
         status = Status.Issued;
         // issuanceCycle.issuanceDate = block.timestamp;
-        // burn the token of the expired issuance
-        for (uint256 i = 0; i < investors.length; i++) {
-            uint256 prevSupply = ISHNFT(shNFT).balanceOf(investors[i], prevTokenId);
+        // burn the token of the last cycle
+        address[] memory totalHolders = ISHNFT(shNFT).accountsByToken(currentTokenId);
+        for (uint256 i = 0; i < totalHolders.length; i++) {
+            uint256 prevSupply = ISHNFT(shNFT).balanceOf(totalHolders[i], prevTokenId);
             if (prevSupply > 0) {
-                ISHNFT(shNFT).burn(investors[i], prevTokenId, prevSupply);
-                ISHNFT(shNFT).mint(investors[i], currentTokenId, prevSupply, issuanceCycle.uri);
-            }
-            uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
-            if (tokenSupply == 0 && userInfo[investors[i]].coupon == 0 && userInfo[investors[i]].optionPayout == 0) {
-                investors.remove(i);
+                ISHNFT(shNFT).burn(totalHolders[i], prevTokenId, prevSupply);
+                ISHNFT(shNFT).mint(totalHolders[i], currentTokenId, prevSupply, issuanceCycle.uri);
             }
         }
     }
@@ -240,10 +247,11 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
      * @dev Update users' coupon balance every week
      */
     function weeklyCoupon() external whenNotPaused onlyIssued onlyWhitelisted {
-        for (uint256 i = 0; i < investors.length; i++) {
-            uint256 tokenSupply = ISHNFT(shNFT).balanceOf(investors[i], currentTokenId);
+        address[] memory totalHolders = ISHNFT(shNFT).accountsByToken(currentTokenId);
+        for (uint256 i = 0; i < totalHolders.length; i++) {
+            uint256 tokenSupply = ISHNFT(shNFT).balanceOf(totalHolders[i], currentTokenId);
             if (tokenSupply > 0) {
-                userInfo[investors[i]].coupon += _convertTokenToCurrency(tokenSupply) * issuanceCycle.coupon / 10000;
+                userInfo[totalHolders[i]].coupon += _convertTokenToCurrency(tokenSupply) * issuanceCycle.coupon / 10000;
             }
         }
     }
@@ -276,21 +284,31 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
     /**
      * @dev Deposits the USDC into the structured product and mint ERC1155 NFT
      * @param _amount is the amount of USDC to deposit
+     * @param _type True: include profit, False: without profit
      */
-    function deposit(uint256 _amount) external whenNotPaused nonReentrant onlyAccepted {
+    function deposit(uint256 _amount, bool _type) external whenNotPaused nonReentrant onlyAccepted {
         require(_amount > 0, "Amount must be greater than zero");
-        uint256 decimals = _currencyDecimals();
-        require((_amount % (1000 * 10 ** decimals)) == 0, "Amount must be whole-number thousands");
         
-        uint256 supply = _amount / (1000 * 10 ** decimals);
+        uint256 amountToDeposit = _amount;
+        if (_type == true) {
+            amountToDeposit += userInfo[msg.sender].coupon + userInfo[msg.sender].optionPayout;
+        }
 
-        currentCapacity += _amount;
-        require((maxCapacity * 10 ** decimals) >= currentCapacity, "Product is full");
+        uint256 decimals = _currencyDecimals();
+        require((amountToDeposit % (1000 * 10 ** decimals)) == 0, "Amount must be whole-number thousands");
+        require((maxCapacity * 10 ** decimals) >= (currentCapacity + amountToDeposit), "Product is full");
+
+        uint256 supply = amountToDeposit / (1000 * 10 ** decimals);
 
         currency.safeTransferFrom(msg.sender, address(this), _amount);
         ISHNFT(shNFT).mint(msg.sender, currentTokenId, supply, issuanceCycle.uri);
 
-        investors.push(msg.sender);
+        currentCapacity += amountToDeposit;
+        if (_type == true) {
+            userInfo[msg.sender].coupon = 0;
+            userInfo[msg.sender].optionPayout = 0;
+        }
+        // investors.push(msg.sender);
 
         emit Deposit(msg.sender, _amount, currentTokenId, supply);
     }
@@ -299,43 +317,54 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
      * @dev Withdraws the principal from the structured product
      */
     function withdrawPrincipal() external nonReentrant onlyAccepted {
-        uint256 tokenSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
-        require(tokenSupply > 0, "No principal");
-        uint256 principal = _convertTokenToCurrency(tokenSupply);
+        uint256 prevSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
+        uint256 currentSupply = ISHNFT(shNFT).balanceOf(msg.sender, currentTokenId);
+        uint256 totalSupply = prevSupply + currentSupply;
+
+        require(totalSupply > 0, "No principal");
+        uint256 principal = _convertTokenToCurrency(totalSupply);
         require(totalBalance() >= principal, "Insufficient balance");
         
         currency.safeTransfer(msg.sender, principal);
-        ISHNFT(shNFT).burn(msg.sender, prevTokenId, tokenSupply);
-        
-        if (userInfo[msg.sender].coupon == 0 && userInfo[msg.sender].optionPayout == 0) {
-            delete userInfo[msg.sender];
-        }
+        ISHNFT(shNFT).burn(msg.sender, prevTokenId, prevSupply);
+        ISHNFT(shNFT).burn(msg.sender, currentTokenId, currentSupply);
 
-        emit WithdrawPrincipal(msg.sender, principal, prevTokenId, tokenSupply);
+        currentCapacity -= principal;
+
+        emit WithdrawPrincipal(
+            msg.sender, 
+            principal, 
+            prevTokenId, 
+            prevSupply, 
+            currentTokenId, 
+            currentSupply
+        );
     }
 
     /**
      * @notice Withdraws user's coupon payout
      */
-    function withdrawCoupon() external nonReentrant onlyAccepted {
-        require(totalBalance() >= userInfo[msg.sender].coupon,
-            "Insufficient balance");
-        if (userInfo[msg.sender].coupon > 0) {
-            currency.safeTransfer(msg.sender, userInfo[msg.sender].coupon);
-            emit WithdrawCoupon(msg.sender, userInfo[msg.sender].coupon);
-        }
+    function withdrawCoupon() external nonReentrant {
+        require(userInfo[msg.sender].coupon > 0, "No coupon payout");
+        require(totalBalance() >= userInfo[msg.sender].coupon, "Insufficient balance");
+        
+        currency.safeTransfer(msg.sender, userInfo[msg.sender].coupon);
+        userInfo[msg.sender].coupon = 0;
+
+        emit WithdrawCoupon(msg.sender, userInfo[msg.sender].coupon);
     }
 
     /**
      * @notice Withdraws user's option payout
      */
-    function withdrawOption() external nonReentrant onlyAccepted {
-        require(totalBalance() >= userInfo[msg.sender].optionPayout,
-            "Insufficient balance");
-        if (userInfo[msg.sender].optionPayout > 0) {
-            currency.safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
-            emit WithdrawOption(msg.sender, userInfo[msg.sender].optionPayout);
-        }
+    function withdrawOption() external nonReentrant {
+        require(userInfo[msg.sender].optionPayout > 0, "No option payout");
+        require(totalBalance() >= userInfo[msg.sender].optionPayout, "Insufficient balance");
+        
+        currency.safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
+        userInfo[msg.sender].optionPayout = 0;
+
+        emit WithdrawOption(msg.sender, userInfo[msg.sender].optionPayout);
     }
 
     function distributeWithComp(
@@ -435,18 +464,11 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
     }
 
     /**
-     * @notice Returns the number of investors
-     */
-    function numOfInvestors() external view returns (uint256) {
-        return investors.length;
-    }
-
-    /**
      * @notice Returns the user's principal balance
      * Before auto-rolling or fund lock, users can have both tokens so total supply is the sum of 
      * previous supply and current supply
      */
-    function principalBalance(address _user) external view returns (uint256) {
+    function principalBalance(address _user) public view returns (uint256) {
         uint256 prevSupply = ISHNFT(shNFT).balanceOf(_user, prevTokenId);
         uint256 tokenSupply = ISHNFT(shNFT).balanceOf(_user, currentTokenId);
         return _convertTokenToCurrency(prevSupply + tokenSupply);
