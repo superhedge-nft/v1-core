@@ -3,7 +3,6 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
@@ -13,7 +12,7 @@ import "./interfaces/compound/ICErc20.sol";
 import "./libraries/DataTypes.sol";
 import "./libraries/Array.sol";
 
-contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
+contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using Array for address[];
 
@@ -49,8 +48,6 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
     DataTypes.IssuanceCycle public issuanceCycle;
     
     mapping(address => UserInfo) public userInfo;
-
-    // address[] public investors;
 
     IERC20Upgradeable public currency;
     bool public isDistributed;
@@ -138,7 +135,6 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
         uint256 _maxCapacity,
         DataTypes.IssuanceCycle memory _issuanceCycle
     ) public initializer {
-        __Ownable_init();
         __ReentrancyGuard_init();
         __Pausable_init();
 
@@ -308,7 +304,6 @@ contract SHProduct is OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUp
             userInfo[msg.sender].coupon = 0;
             userInfo[msg.sender].optionPayout = 0;
         }
-        // investors.push(msg.sender);
 
         emit Deposit(msg.sender, _amount, currentTokenId, supply);
     }
