@@ -7,21 +7,21 @@
 const { ethers, upgrades } = require("hardhat");
 
 async function main() {
-    const factoryAddr = "0x5662A56F45C8744e3703AdE354209d5526C4F9C5";
+    const factoryAddr = "0xa8B68a1e2400Fe67984A2d4197a063c56b0d0771";
     const shFactory = await ethers.getContractAt("SHFactory", factoryAddr);
 
-    const nftAddr = "0x0173fA97C69a2EB209D12a77bF376772dD1C5C1F";
+    const nftAddr = "0x17638b30e5d8440CdBFbFF7609D2a1493CD9cb73";
 
     const usdc = "0x07865c6E87B9F70255377e024ace6630C1Eaa37F";
 
-    const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
-    const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; // Qredo Metamask Institutional
+    const manager = "0x1454dEC9200087Bd515dDc4d33Ea255D1Deaa858";
+    const qredoWallet = "0x79657d164F79530b71d7146edFe27Cccc87F67CB"; // Qredo Metamask Institutional
 
-    const productName = "ETH Bullish Spread"
+    const productName = "ETH Bullish Spread Chris 2"
     const issuanceCycle = {
-        coupon: 20,
-        strikePrice1: 1200,
-        strikePrice2: 1400,
+        coupon: 10,
+        strikePrice1: 1000,
+        strikePrice2: 1300,
         strikePrice3: 0,
         strikePrice4: 0,
         uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
@@ -35,7 +35,7 @@ async function main() {
         manager,
         nftAddr, // ERC1155 NFT address
         qredoWallet, // QREDO Wallet
-        1000000, // Max capacity
+        10000, // Max capacity
         issuanceCycle // First issuance cycle
     );
   

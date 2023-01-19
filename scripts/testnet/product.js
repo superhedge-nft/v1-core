@@ -46,7 +46,7 @@ async function main() {
         manager,
         shNFT.address, // ERC1155 NFT address
         qredoWallet, // QREDO Wallet
-        1000000, // Max capacity
+        100000, // Max capacity
         issuanceCycle // First issuance cycle
     );
   
