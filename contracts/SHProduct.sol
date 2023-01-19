@@ -122,7 +122,28 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     event FundAccept(
         uint256 _optionProfit,
         uint256 _prevTokenId,
-        uint256 _currentTokenId
+        uint256 _currentTokenId,
+        uint256 _numOfNftHolders,
+        uint256 _timestamp
+    );
+
+    event FundLock(
+        uint256 _timestamp
+    );
+
+    event Issuance(
+        uint256 _numOfNftHolders,
+        uint256 _timestamp
+    );
+
+    event Mature(
+        uint256 _timestamp
+    );
+    
+    event WeeklyCoupon(
+        uint256 _coupon,
+        uint256 _numOfNftHolders,
+        uint256 _timestamp
     );
 
     function initialize(
@@ -212,11 +233,19 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         ISHNFT(shNFT).tokenIdIncrement();
         currentTokenId = ISHNFT(shNFT).currentTokenID();
 
-        emit FundAccept(optionProfit, prevTokenId, currentTokenId);
+        emit FundAccept(
+            optionProfit, 
+            prevTokenId, 
+            currentTokenId, 
+            totalHolders.length, 
+            block.timestamp
+        );
     }
 
     function fundLock() external whenNotPaused onlyWhitelisted {
         status = Status.Locked;
+
+        emit FundLock(block.timestamp);
     }
 
     function issuance() external whenNotPaused onlyWhitelisted {
@@ -232,11 +261,14 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
                 ISHNFT(shNFT).mint(totalHolders[i], currentTokenId, prevSupply, issuanceCycle.uri);
             }
         }
+
+        emit Issuance(totalHolders.length, block.timestamp);
     }
 
     function mature() external whenNotPaused onlyIssued onlyWhitelisted {
         status = Status.Mature;
         // issuanceCycle.maturityDate = block.timestamp;
+        emit Mature(block.timestamp);
     }
 
     /**
@@ -250,6 +282,8 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
                 userInfo[totalHolders[i]].coupon += _convertTokenToCurrency(tokenSupply) * issuanceCycle.coupon / 10000;
             }
         }
+
+        emit WeeklyCoupon(issuanceCycle.coupon, totalHolders.length, block.timestamp);
     }
 
     /**
