@@ -26,7 +26,7 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
         address indexed product,
         string name, 
         string underlying,
-        uint256 maxSupply
+        uint256 maxCapacity
     );
 
     /**
