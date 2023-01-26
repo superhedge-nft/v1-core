@@ -14,17 +14,17 @@ async function main() {
 
     const usdc = "0x07865c6E87B9F70255377e024ace6630C1Eaa37F";
 
-    const manager = "0x1454dEC9200087Bd515dDc4d33Ea255D1Deaa858";
-    const qredoWallet = "0x79657d164F79530b71d7146edFe27Cccc87F67CB"; // Qredo Metamask Institutional
+    const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
+    const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; // Qredo Metamask Institutional
 
-    const productName = "ETH Bullish Spread Chris 2"
+    const productName = "ETH Bullish Spread 3"
     const issuanceCycle = {
         coupon: 10,
-        strikePrice1: 1000,
-        strikePrice2: 1300,
+        strikePrice1: 1400,
+        strikePrice2: 1600,
         strikePrice3: 0,
         strikePrice4: 0,
-        uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
+        uri: "https://gateway.pinata.cloud/ipfs/QmW4rgKbPm7cGtb2wNUc8x374taPPTNAi5FYXW7oKaW3U9"
     }
 
     // Create new product
@@ -35,7 +35,7 @@ async function main() {
         manager,
         nftAddr, // ERC1155 NFT address
         qredoWallet, // QREDO Wallet
-        10000, // Max capacity
+        20000, // Max capacity
         issuanceCycle // First issuance cycle
     );
   

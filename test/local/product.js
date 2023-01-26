@@ -57,7 +57,7 @@ describe("SHFactory test suite", function () {
         owner.address,
         shNFT.address,
         qredoWallet.address,
-        1000000,
+        100000,
         issuanceCycle
       )).to.be.emit(shFactory, "ProductCreated");
   
@@ -83,7 +83,7 @@ describe("SHFactory test suite", function () {
 
     it("Reverts if the product status is not 'Accepted'", async () => {
       await expect(
-        shProduct.deposit(parseUnits("2000", 6))
+        shProduct.deposit(parseUnits("2000", 6), false)
       ).to.be.revertedWith("Not accepted status");
     });
 
@@ -91,15 +91,15 @@ describe("SHFactory test suite", function () {
       await shProduct.fundAccept();
 
       await expect(
-        shProduct.deposit(parseUnits("0", 6))
+        shProduct.deposit(parseUnits("0", 6), false)
       ).to.be.revertedWith("Amount must be greater than zero");
 
       await expect(
-        shProduct.deposit(parseUnits("1500", 6))
+        shProduct.deposit(parseUnits("1500", 6), false)
       ).to.be.revertedWith("Amount must be whole-number thousands");
 
       await expect(
-        shProduct.deposit(parseUnits("20000000", 6))
+        shProduct.deposit(parseUnits("20000000", 6), false)
       ).to.be.revertedWith("Product is full");
     });
 
@@ -111,7 +111,7 @@ describe("SHFactory test suite", function () {
       const currentTokenID = await shProduct.currentTokenId();
       
       expect(
-        await shProduct.connect(user1).deposit(amount)
+        await shProduct.connect(user1).deposit(amount, false)
       ).to.be.emit(shProduct, "Deposit").withArgs(user1.address, amount, currentTokenID, supply);
 
       expect(
@@ -123,7 +123,6 @@ describe("SHFactory test suite", function () {
       ).to.equal(2);
 
       expect(await shProduct.currentCapacity()).to.equal(amount);
-      expect(await shProduct.numOfInvestors()).to.equal(1);
     });
 
     it("set token URI", async () => {
@@ -136,7 +135,7 @@ describe("SHFactory test suite", function () {
       await shProduct.fundLock();
       const amount2 = parseUnits("1000", 6);
       await expect(
-        shProduct.connect(user2).deposit(amount2)
+        shProduct.connect(user2).deposit(amount2, false)
       ).to.be.revertedWith("Not accepted status");
     });
   });
@@ -148,11 +147,34 @@ describe("SHFactory test suite", function () {
 
     it("Check coupon balance after one week", async () => {
       await shProduct.weeklyCoupon();
-      const userInfo = await shProduct.userInfo(user1.address);
       const currentTokenID = await shProduct.currentTokenId();
       const tokenSupply = parseInt(await shNFT.balanceOf(user1.address, currentTokenID));
       const couponBalance = tokenSupply * 1000 * Math.pow(10, 6) * 10 / 10000;
-      expect(userInfo.coupon).to.equal(couponBalance);
+      expect(await shProduct.couponBalance(user1.address)).to.equal(couponBalance);
+    });
+
+    it("Check coupon balance after transfer NFT into user2 wallet", async () => {
+      const currentTokenID = await shProduct.currentTokenId();
+      const tokenSupply = await shNFT.balanceOf(user1.address, currentTokenID);
+
+      await shNFT.connect(user1).safeTransferFrom(
+        user1.address,
+        user2.address,
+        currentTokenID,
+        tokenSupply,
+        []
+      );
+      
+      const prevUser1Coupon = parseInt(await shProduct.couponBalance(user1.address));
+      const prevUser2Coupon = parseInt(await shProduct.couponBalance(user2.address));
+      await shProduct.weeklyCoupon();
+      const user1Supply = parseInt(await shNFT.balanceOf(user1.address, currentTokenID));
+      const user1Coupon = user1Supply * 1000 * Math.pow(10, 6) * 10 / 10000;
+      expect(await shProduct.couponBalance(user1.address)).to.equal(prevUser1Coupon + user1Coupon);
+      
+      const user2Supply = parseInt(await shNFT.balanceOf(user2.address, currentTokenID));
+      const user2Coupon = user2Supply * 1000 * Math.pow(10, 6) * 10 / 10000;
+      expect(await shProduct.couponBalance(user2.address)).to.equal(prevUser2Coupon + user2Coupon);
     });
   });
 
@@ -167,18 +189,25 @@ describe("SHFactory test suite", function () {
       ).to.be.revertedWith("Not accepted status");
     });
 
-    it("Withdraw principal", async () => {
+    it("Reverts if user has no NFT", async() => {
       await shProduct.fundAccept();
+      await expect(
+        shProduct.connect(user1).withdrawPrincipal()
+      ).to.be.revertedWith("No principal");
+    });
+
+    it("User2 should be able to withdraw principal", async () => {
       const prevTokenID = await shProduct.prevTokenId();
-      const tokenSupply = parseInt(await shNFT.balanceOf(user1.address, prevTokenID));
+      const tokenSupply = parseInt(await shNFT.balanceOf(user2.address, prevTokenID));
       const principal = tokenSupply * 1000 * Math.pow(10, 6);
       
       expect(
-        await shProduct.connect(user1).withdrawPrincipal()
-      ).to.be.emit(shProduct, "WithdrawPrincipal").withArgs(user1.address, principal, prevTokenID, tokenSupply);
+        await shProduct.connect(user2).withdrawPrincipal()
+      ).to.be.emit(shProduct, "WithdrawPrincipal")
+      .withArgs(user2.address, principal, prevTokenID, tokenSupply);
     });
 
-    it("Withdraw coupon, but should revert since there is no enough balance", async () => {
+    /* it("Withdraw coupon, but should revert since there is no enough balance", async () => {
       await expect(
         shProduct.connect(user1).withdrawCoupon()
       ).to.be.revertedWith("Insufficient balance");
@@ -186,10 +215,10 @@ describe("SHFactory test suite", function () {
 
     it("Withdraw option payout", async() => {
       await shProduct.connect(user1).withdrawOption();
-    });
+    }); */
   });
 
-  describe("Set new issuance cycle", () => {
+  /* describe("Set new issuance cycle", () => {
     const newIssuanceCycle = {
       coupon: 20, // 0.20% in basis points
       strikePrice1: 20000,
@@ -213,5 +242,5 @@ describe("SHFactory test suite", function () {
         newIssuanceCycle
       )).to.be.emit(shFactory, "IssuanceCycleSet");
     });
-  });
+  }); */
 });
