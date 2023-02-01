@@ -151,6 +151,16 @@ contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
     }
 
     /**
+     * @dev Sets owner role
+     * @param _account The owner address
+     */
+    function setRoleOwner(
+        address _account
+    ) external onlyRole(OWNER_ROLE) {
+        _grantRole(OWNER_ROLE, _account);
+    }
+
+    /**
      * @dev See {IERC165-supportsInterface}.
      */
     function supportsInterface(bytes4 interfaceId)
