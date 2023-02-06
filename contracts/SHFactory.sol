@@ -64,6 +64,12 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
 
         // create new product contract
         SHProduct product = new SHProduct();
+        address productAddr = address(product);
+
+        // add NFT minter role
+        // ISHNFT(_shNFT).addMinter(productAddr);
+        ISHNFT(_shNFT).addMinter(productAddr);
+
         product.initialize(
             _name, 
             _underlying, 
@@ -74,13 +80,10 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
             _maxCapacity, 
             _issuanceCycle
         );
-        address productAddr = address(product);
 
         getProduct[_name] = productAddr;
         isProduct[productAddr] = true;
         products.push(productAddr);
-        // add NFT minter role
-        ISHNFT(_shNFT).addMinter(productAddr);
         
         emit ProductCreated(productAddr, _name, _underlying, _maxCapacity);
     }
