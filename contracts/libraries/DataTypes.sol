@@ -9,6 +9,11 @@ library DataTypes {
         uint256 strikePrice2;
         uint256 strikePrice3;
         uint256 strikePrice4;
+        uint256 tr1;
+        uint256 tr2;
+        uint256 issuanceDate;
+        uint256 maturityDate;
+        string apy;
         string uri;
     }
 }

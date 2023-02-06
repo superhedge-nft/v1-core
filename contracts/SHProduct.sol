@@ -109,14 +109,17 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         address _cErc20Pool
     );
 
-    /// @notice Event emitted when new issuance cycle is set
-    event IssuanceCycleSet(
-        uint256 coupon,
-        uint256 strikePrice1,
-        uint256 strikePrice2,
-        uint256 strikePrice3,
-        uint256 strikePrice4,
-        string uri
+    /// @notice Event emitted when new issuance cycle is updated
+    event UpdateIssuanceCycle(
+        uint256 _coupon,
+        uint256 _strikePrice1,
+        uint256 _strikePrice2,
+        uint256 _strikePrice3,
+        uint256 _strikePrice4,
+        uint256 _tr1,
+        uint256 _tr2,
+        string _apy,
+        string _uri
     );
 
     event FundAccept(
@@ -132,7 +135,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     );
 
     event Issuance(
-        uint256 _numOfNftHolders,
+        uint256 _currentTokenId,
         uint256 _timestamp
     );
 
@@ -144,6 +147,35 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _coupon,
         uint256 _numOfNftHolders,
         uint256 _timestamp
+    );
+
+    event UpdateCoupon(
+        uint256 _newCoupon
+    );
+
+    event UpdateStrikePrices(
+        uint256 _strikePrice1,
+        uint256 _strikePrice2,
+        uint256 _strikePrice3,
+        uint256 _strikePrice4
+    );
+
+    event UpdateURI(
+        string _uri
+    );
+
+    event UpdateTRs(
+        uint256 _newTr1,
+        uint256 _newTr2
+    );
+
+    event UpdateAPY(
+        string _apy
+    );
+
+    event UpdateTimes(
+        uint256 _issuanceDate,
+        uint256 _maturityDate
     );
 
     function initialize(
@@ -170,7 +202,8 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         shNFT = _shNFT;
         issuanceCycle = _issuanceCycle;
 
-        _setIssuanceCycle(_issuanceCycle);
+        ISHNFT(_shNFT).tokenIdIncrement();
+        currentTokenId = ISHNFT(shNFT).currentTokenID();
     }
     
     modifier onlyWhitelisted() {
@@ -192,6 +225,11 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         _;
     }
 
+    modifier onlyLocked() {
+        require(status == Status.Locked, "Not locked status");
+        _;
+    }
+
     modifier onlyIssued() {
         require(status == Status.Issued, "Not issued status");
         _;
@@ -199,6 +237,12 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
 
     modifier onlyMature() {
         require(status == Status.Mature, "Not mature status");
+        _;
+    }
+
+    modifier LockedOrMature() {
+        require(status == Status.Locked || status == Status.Mature, 
+            "Neither mature nor locked");
         _;
     }
 
@@ -218,23 +262,21 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
 
     function fundAccept() external whenNotPaused onlyWhitelisted {
         // First, distribute option profit to the token holders.
-        uint256 totalSupply = ISHNFT(shNFT).totalSupply(currentTokenId);
-        address[] memory totalHolders = ISHNFT(shNFT).accountsByToken(currentTokenId);
-        if (optionProfit > 0) {
+        address[] memory totalHolders = ISHNFT(shNFT).accountsByToken(prevTokenId);
+        uint256 _optionProfit = optionProfit;
+        if (_optionProfit > 0) {
+            uint256 totalSupply = ISHNFT(shNFT).totalSupply(prevTokenId);
             for (uint256 i = 0; i < totalHolders.length; i++) {
-                uint256 tokenSupply = ISHNFT(shNFT).balanceOf(totalHolders[i], currentTokenId);
-                userInfo[totalHolders[i]].optionPayout += tokenSupply * optionProfit / totalSupply;
+                uint256 prevSupply = ISHNFT(shNFT).balanceOf(totalHolders[i], prevTokenId);
+                userInfo[totalHolders[i]].optionPayout += prevSupply * _optionProfit / totalSupply;
             }
+            optionProfit = 0;
         }
         // Then update status
         status = Status.Accepted;
-        prevTokenId = currentTokenId;
-
-        ISHNFT(shNFT).tokenIdIncrement();
-        currentTokenId = ISHNFT(shNFT).currentTokenID();
 
         emit FundAccept(
-            optionProfit, 
+            _optionProfit, 
             prevTokenId, 
             currentTokenId, 
             totalHolders.length, 
@@ -242,18 +284,15 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         );
     }
 
-    function fundLock() external whenNotPaused onlyWhitelisted {
+    function fundLock() external whenNotPaused onlyAccepted onlyWhitelisted {
         status = Status.Locked;
 
         emit FundLock(block.timestamp);
     }
 
-    function issuance() external whenNotPaused onlyWhitelisted {
-        require(status == Status.Locked, "Fund is not locked");
-        status = Status.Issued;
-        // issuanceCycle.issuanceDate = block.timestamp;
-        // burn the token of the last cycle
-        address[] memory totalHolders = ISHNFT(shNFT).accountsByToken(currentTokenId);
+    function issuance() external whenNotPaused onlyLocked onlyWhitelisted {
+        // burn the token of the last cycle, auto-roll of principal on next cycle
+        address[] memory totalHolders = ISHNFT(shNFT).accountsByToken(prevTokenId);
         for (uint256 i = 0; i < totalHolders.length; i++) {
             uint256 prevSupply = ISHNFT(shNFT).balanceOf(totalHolders[i], prevTokenId);
             if (prevSupply > 0) {
@@ -262,12 +301,20 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
             }
         }
 
-        emit Issuance(totalHolders.length, block.timestamp);
+        status = Status.Issued;
+
+        emit Issuance(currentTokenId, block.timestamp);
     }
 
     function mature() external whenNotPaused onlyIssued onlyWhitelisted {
+        // Update currentTokenId & prevTokenId
+        prevTokenId = currentTokenId;
+
+        ISHNFT(shNFT).tokenIdIncrement();
+        currentTokenId = ISHNFT(shNFT).currentTokenID();
+
         status = Status.Mature;
-        // issuanceCycle.maturityDate = block.timestamp;
+
         emit Mature(block.timestamp);
     }
 
@@ -287,28 +334,124 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     }
 
     /**
-     * @dev Set new issuance cycle, called by only manager
+     * @dev Updates only coupon parameter
+     * @param _newCoupon weekly coupon rate in basis point; e.g. 0.10%/wk => 10
      */
-    function setIssuanceCycle(
-        DataTypes.IssuanceCycle memory _issuanceCycle
-    ) external onlyManager {
-        require(status != Status.Issued, "Already issued status");
-        _setIssuanceCycle(_issuanceCycle);
-    }
-    
-    function _setIssuanceCycle(
-        DataTypes.IssuanceCycle memory _issuanceCycle
-    ) internal {
-        issuanceCycle = _issuanceCycle;
+    function updateCoupon(
+        uint256 _newCoupon
+    ) public LockedOrMature onlyManager {
+        require(issuanceCycle.coupon != _newCoupon, "Same coupon rate");
+        issuanceCycle.coupon = _newCoupon;
 
-        emit IssuanceCycleSet(
-            _issuanceCycle.coupon, 
-            _issuanceCycle.strikePrice1, 
-            _issuanceCycle.strikePrice2,
-            _issuanceCycle.strikePrice3,
-            _issuanceCycle.strikePrice4,
-            _issuanceCycle.uri
+        emit UpdateCoupon(_newCoupon);
+    }
+
+    /**
+     * @dev Updates strike prices
+     */
+    function updateStrikePrices(
+        uint256 _strikePrice1,
+        uint256 _strikePrice2,
+        uint256 _strikePrice3,
+        uint256 _strikePrice4
+    ) public LockedOrMature onlyManager {
+        issuanceCycle.strikePrice1 = _strikePrice1;
+        issuanceCycle.strikePrice2 = _strikePrice2;
+        issuanceCycle.strikePrice3 = _strikePrice3;
+        issuanceCycle.strikePrice4 = _strikePrice4;
+
+        emit UpdateStrikePrices(
+            _strikePrice1, 
+            _strikePrice2, 
+            _strikePrice3, 
+            _strikePrice4
         );
+    }
+
+    /**
+     * @dev Updates token URI
+     */
+    function updateURI(
+        string memory _newUri
+    ) public LockedOrMature onlyManager {
+        issuanceCycle.uri = _newUri;
+
+        emit UpdateURI(_newUri);
+    }
+
+    /**
+     * @dev Updates TR1 & TR2 (total returns %)
+     */
+    function updateTRs(
+        uint256 _newTr1,
+        uint256 _newTr2
+    ) public LockedOrMature onlyManager {
+        issuanceCycle.tr1 = _newTr1;
+        issuanceCycle.tr2 = _newTr2;
+
+        emit UpdateTRs(_newTr1, _newTr2);
+    }
+
+    /**
+     *
+     */
+    function updateAPY(
+        string memory _apy
+    ) public LockedOrMature onlyManager {
+        issuanceCycle.apy = _apy;
+
+        emit UpdateAPY(_apy);
+    }
+
+    /**
+     * @dev Update all parameters for next issuance cycle, called by only manager
+     */
+    function updateIssuanceCycle(
+        uint256 _coupon,
+        uint256 _strikePrice1,
+        uint256 _strikePrice2,
+        uint256 _strikePrice3,
+        uint256 _strikePrice4,
+        uint256 _tr1,
+        uint256 _tr2,
+        string memory _apy,
+        string memory _uri
+    ) external LockedOrMature onlyManager {
+        
+        updateCoupon(_coupon);
+
+        updateStrikePrices(_strikePrice1, _strikePrice2, _strikePrice3, _strikePrice4);
+
+        updateTRs(_tr1, _tr2);
+
+        updateAPY(_apy);
+
+        updateURI(_uri);
+
+        emit UpdateIssuanceCycle(
+            _coupon, 
+            _strikePrice1, 
+            _strikePrice2,
+            _strikePrice3,
+            _strikePrice4,
+            _tr1,
+            _tr2,
+            _apy,
+            _uri
+        );
+    }
+
+    /**
+     * @dev Update issuance & maturity dates
+     */
+    function updateTimes(
+        uint256 _issuanceDate,
+        uint256 _maturityDate
+    ) external onlyMature onlyManager {
+        issuanceCycle.issuanceDate = _issuanceDate;
+        issuanceCycle.maturityDate = _maturityDate;
+
+        emit UpdateTimes(_issuanceDate, _maturityDate);
     }
 
     /**
@@ -399,7 +542,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     function distributeWithComp(
         uint256 _yieldRate,
         address _cErc20Pool
-    ) external onlyManager onlyIssued {
+    ) external onlyManager onlyLocked {
         require(!isDistributed, "Already distributed");
         require(_yieldRate <= 100, "Yield rate should be equal or less than 100");
         uint256 optionRate = 100 - _yieldRate;
@@ -438,7 +581,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     function distributeWithClear(
         uint256[] calldata _yieldRates, 
         address[] calldata _clearpools
-    ) external onlyManager onlyIssued {
+    ) external onlyManager onlyLocked {
         require(!isDistributed, "Already distributed");
         require(_yieldRates.length == _clearpools.length, "Should have the same length");
         uint256 totalYieldRate = 0;
