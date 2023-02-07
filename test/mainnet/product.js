@@ -32,8 +32,6 @@ describe("SHFactory test suite", function () {
     
         usdc = await ethers.getContractAt("IERC20", USDC);
 
-        console.log(usdc.address);
-
         aurosPool = await ethers.getContractAt(
             "IPoolMaster",
             aurosPoolAddr
@@ -64,13 +62,18 @@ describe("SHFactory test suite", function () {
     });
 
     describe("Create product", () => {
-        const productName = "BTC Defensive Spread";
+        const productName = "ETH Bullish Spread";
         const issuanceCycle = {
             coupon: 10,
-            strikePrice1: 25000,
-            strikePrice2: 20000,
+            strikePrice1: 1400,
+            strikePrice2: 1600,
             strikePrice3: 0,
             strikePrice4: 0,
+            tr1: 11750,
+            tr2: 10040,
+            issuanceDate: 1675872000,
+            maturityDate: 1675958400,
+            apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }
 
@@ -78,7 +81,7 @@ describe("SHFactory test suite", function () {
             await expect(
               shFactory.createProduct(
                 productName,
-                "BTC/USD",
+                "ETH/USDC",
                 usdc.address,
                 owner.address,
                 shNFT.address,
@@ -92,12 +95,12 @@ describe("SHFactory test suite", function () {
         it("Successfully created", async () => {
             expect(await shFactory.createProduct(
               productName,
-              "BTC/USD",
+              "ETH/USDC",
               usdc.address,
               owner.address,
               shNFT.address,
               qredoWallet,
-              1000000,
+              100000,
               issuanceCycle
             )).to.be.emit(shFactory, "ProductCreated");
         
@@ -108,7 +111,7 @@ describe("SHFactory test suite", function () {
             const SHProduct = await ethers.getContractFactory("SHProduct");
             shProduct = SHProduct.attach(productAddr);
         
-            expect(await shProduct.currentTokenId()).to.equal(0);
+            expect(await shProduct.currentTokenId()).to.equal(1);
             expect(await shProduct.shNFT()).to.equal(shNFT.address);
         });
     });
@@ -117,11 +120,12 @@ describe("SHFactory test suite", function () {
         before(async() => {
             await usdc.connect(whaleSigner).transfer(user1.address, parseUnits("10000", 6));
             await usdc.connect(whaleSigner).transfer(user2.address, parseUnits("10000", 6));
+            await usdc.connect(whaleSigner).transfer(qredoWallet, parseUnits("10000", 6));
         });
 
         it("Reverts if the product status is not 'Accepted'", async () => {
             await expect(
-              shProduct.connect(user1).deposit(parseUnits("2000", 6))
+              shProduct.connect(user1).deposit(parseUnits("2000", 6), false)
             ).to.be.revertedWith("Not accepted status");
         });
 
@@ -130,15 +134,15 @@ describe("SHFactory test suite", function () {
             await shProduct.fundAccept();
 
             await expect(
-                shProduct.connect(user1).deposit(parseUnits("0", 6))
+                shProduct.connect(user1).deposit(parseUnits("0", 6), false)
             ).to.be.revertedWith("Amount must be greater than zero");
     
             await expect(
-                shProduct.connect(user1).deposit(parseUnits("1500", 6))
+                shProduct.connect(user1).deposit(parseUnits("1500", 6), false)
             ).to.be.revertedWith("Amount must be whole-number thousands");
     
             await expect(
-                shProduct.connect(user1).deposit(parseUnits("20000000", 6))
+                shProduct.connect(user1).deposit(parseUnits("20000000", 6), false)
             ).to.be.revertedWith("Product is full");
         });
 
@@ -150,7 +154,7 @@ describe("SHFactory test suite", function () {
             const currentTokenID = await shProduct.currentTokenId();
             
             expect(
-                await shProduct.connect(user1).deposit(amount)
+                await shProduct.connect(user1).deposit(amount, false)
             ).to.be.emit(shProduct, "Deposit").withArgs(
                 user1.address, amount, currentTokenID, supply
             );
@@ -164,7 +168,6 @@ describe("SHFactory test suite", function () {
             ).to.equal(2);
 
             expect(await shProduct.currentCapacity()).to.equal(amount);
-            expect(await shProduct.numOfInvestors()).to.equal(1);
         });
 
         it("set token URI", async () => {
@@ -177,43 +180,12 @@ describe("SHFactory test suite", function () {
             await shProduct.fundLock();
             const amount2 = parseUnits("1000", 6);
             await expect(
-              shProduct.connect(user2).deposit(amount2)
+              shProduct.connect(user2).deposit(amount2, false)
             ).to.be.revertedWith("Not accepted status");
         });
     });
 
-    describe("Check coupon & option payout balance, distribute asset", () => {
-        before(async() => {
-            await shProduct.issuance();
-        });
-      
-        it("Check coupon balance after one week", async () => {
-            await shProduct.weeklyCoupon();
-            const userInfo = await shProduct.userInfo(user1.address);
-            console.log(userInfo);
-            const currentTokenID = await shProduct.currentTokenId();
-            const tokenSupply = parseInt(await shNFT.balanceOf(user1.address, currentTokenID));
-            const couponBalance = tokenSupply * 1000 * Math.pow(10, 6) * 10 / 10000;
-            expect(userInfo.coupon).to.equal(couponBalance);
-            console.log(await ethers.provider.getBalance(owner.address));
-        });
-
-        /* it("Distribute with Clearpool", async () => {
-            const optionRate = 20;
-            const yieldRates = [80];
-            const clearpools = [aurosPoolAddr];
-            expect(
-                await shProduct.distributeWithClear(yieldRates, clearpools)
-            ).to.emit(shProduct, "DistributeWithClear")
-            .withArgs(qredoWallet, optionRate, clearpools, yieldRates)
-
-            console.log(await aurosPool.balanceOf(shProduct.address));
-            console.log(await aurosPool.symbol());
-
-            console.log(await usdc.balanceOf(qredoWallet));
-            expect(await shProduct.isDistributed()).to.equal(true);
-        }); */
-
+    describe("Distribute assets & check coupon balance", () => {
         it("Distribute with Compound", async() => {
             const optionRate = 20;
             const yieldRate = 80;
@@ -223,15 +195,107 @@ describe("SHFactory test suite", function () {
             ).to.emit(shProduct, "DistributeWithComp")
             .withArgs(qredoWallet, optionRate, cUSDCAddr, yieldRate);
             
-            console.log(await cUSDC.balanceOf(shProduct.address));
-            console.log(await usdc.balanceOf(qredoWallet));
             expect(await shProduct.isDistributed()).to.equal(true);
+        });
+        
+        it("Check coupon balance", async () => {
+            expect(
+                await shProduct.issuance()
+            ).to.emit(shProduct, "Issuance");
+
+            expect(
+                await shProduct.weeklyCoupon()
+            ).to.emit(shProduct, "WeeklyCoupon");
+            let user1Info = await shProduct.userInfo(user1.address);
+
+            const currentTokenID = await shProduct.currentTokenId();
+            const tokenSupply = parseInt(await shNFT.balanceOf(user1.address, currentTokenID));
+            const couponBalance = tokenSupply * 1000 * Math.pow(10, 6) * 10 / 10000;
+            expect(user1Info.coupon).to.equal(couponBalance);
+        });
+
+        it("check coupon balance after NFT transfer", async () => {
+            const currentTokenID = await shProduct.currentTokenId();
+            const currentSupply = await shNFT.balanceOf(user1.address, currentTokenID);
+            
+            await shNFT.connect(user1).safeTransferFrom(
+                user1.address,
+                user2.address,
+                currentTokenID,
+                currentSupply,
+                []
+            );
+
+            expect(
+                await shProduct.weeklyCoupon()
+            ).to.emit(shProduct, "WeeklyCoupon");
+            
+            const couponBalance = currentSupply * 1000 * Math.pow(10, 6) * 10 / 10000;
+
+            let user1Info = await shProduct.userInfo(user1.address);
+            let user2Info = await shProduct.userInfo(user2.address);
+
+            expect(user1Info.coupon).to.equal(couponBalance);
+            expect(user2Info.coupon).to.equal(couponBalance);
+
+            expect(
+                await shProduct.weeklyCoupon()
+            ).to.emit(shProduct, "WeeklyCoupon");
+
+            user1Info = await shProduct.userInfo(user1.address);
+            user2Info = await shProduct.userInfo(user2.address);
+
+            expect(user1Info.coupon).to.equal(couponBalance);
+            expect(user2Info.coupon).to.equal(couponBalance * 2);
+        });
+
+        it("Withdraws coupon", async() => {
+            await expect(
+                shProduct.connect(user1).withdrawCoupon()
+            ).to.be.revertedWith("Insufficient balance");
+            
+            const user1Info = await shProduct.userInfo(user1.address);
+            const user2Info = await shProduct.userInfo(user2.address);
+
+            // Pre fund from Qredo wallet
+            await usdc.connect(qredoSigner).transfer(
+                shProduct.address, parseUnits("1000", 6)
+            );
+
+            expect(
+                await shProduct.connect(user1).withdrawCoupon()
+            ).to.emit(shProduct, "WithdrawCoupon").withArgs(user1.address, user1Info.coupon);
+
+            expect(
+                await shProduct.connect(user2).withdrawCoupon()
+            ).to.emit(shProduct, "WithdrawCoupon").withArgs(user2.address, user2Info.coupon);
         });
     });
 
-    describe("Redeem prinicipal & interest, option", () => {
-        before(async() => {
-            await shProduct.mature();
+    describe("After maturity", () => {
+        it("Token Ids change", async() => {
+            const prevTokenId = await shProduct.currentTokenId();
+            expect(
+                await shProduct.mature()
+            ).to.emit(shProduct, "Mature");
+
+            expect(await shProduct.prevTokenId()).to.equal(prevTokenId);
+        });
+
+        it("Update issuance & maturity dates", async() => {
+            const issuanceDate = 1676044800;
+            const maturityDate = 1676131200;
+
+            expect(
+                await shProduct.updateTimes(issuanceDate, maturityDate)
+            ).to.emit(shProduct, "UpdateTimes").withArgs(issuanceDate, maturityDate);
+        });
+
+        it("Redeem yield from Compound", async() => {
+            expect(
+                await shProduct.redeemYieldFromComp(cUSDCAddr)
+            ).to.emit(shProduct, "RedeemYieldFromComp").withArgs(cUSDCAddr);
+            expect(await shProduct.isDistributed()).to.equal(false);
         });
 
         it("Redeem option from qredo wallet", async() => {
@@ -240,34 +304,89 @@ describe("SHFactory test suite", function () {
             expect(
                 await shProduct.connect(qredoSigner).redeemOptionPayout(transferAmount)
             ).to.emit(shProduct, "RedeemOptionPayout").withArgs(qredoWallet, transferAmount);
+
+            expect(await shProduct.optionProfit()).to.equal(transferAmount);
+        });
+    });
+
+    describe("Next issuance cycle", () => {
+        it("Accepting funds, check option payout", async() => {
+            let user1Info = await shProduct.userInfo(user1.address);
+            let user2Info = await shProduct.userInfo(user2.address);
+            expect(user1Info.optionPayout).to.equal(0);
+            expect(user2Info.optionPayout).to.equal(0);
+            const optionProfit = await shProduct.optionProfit();
+
+            await shProduct.fundAccept();
+
+            user1Info = await shProduct.userInfo(user1.address);
+            user2Info = await shProduct.userInfo(user2.address);
+
+            expect(user1Info.optionPayout).to.equal(0);
+            expect(user2Info.optionPayout).to.equal(optionProfit);
         });
 
-        /* it("Redeem yield from Clearpool", async() => {
-            const clearpools = [aurosPoolAddr];
+        /* it("Withdraws their funds", async() => {
+            await expect(
+                shProduct.connect(user1).withdrawPrincipal()
+            ).to.be.revertedWith("No principal");
+
+            console.log(await usdc.balanceOf(user2.address));
+            const prevTokenId = await shProduct.prevTokenId();
+            const prevSupply = await shNFT.balanceOf(user2.address, prevTokenId);
+
+            const currentTokenId = await shProduct.currentTokenId();
+            const currentSupply = await shNFT.balanceOf(user2.address, currentTokenId);
 
             expect(
-                await shProduct.redeemYieldFromClear(clearpools)
-            ).to.emit(shProduct, "RedeemYieldFromClear");
+                await shProduct.connect(user2).withdrawPrincipal()
+            ).to.emit(shProduct, "WithdrawPrincipal").withArgs(
+                user2.address,
+                prevTokenId,
+                prevSupply,
+                currentTokenId,
+                currentSupply
+            );
+
+            console.log(await usdc.balanceOf(user2.address));
         }); */
+        
+        it("Update parameters after fund is locked", async() => {
+            await shProduct.fundLock();
+            await shProduct.updateCoupon(20);
+            await shProduct.updateStrikePrices(1300, 1500, 0, 0);
+            await shProduct.updateURI("https://ipfs.filebase.io/ipfs/QmaXPe1yB864wN4jjFff645n78yzuGB2hMrNxQNvEX9f9a");
+            await shProduct.updateTRs(11560, 10830);
+            await shProduct.updateAPY("8-13%");
+            await shProduct.updateParameters(
+                15, 1300, 1500, 0, 0, 11560, 10830, "8-12%", "https://ipfs.filebase.io/ipfs/QmaXPe1yB864wN4jjFff645n78yzuGB2hMrNxQNvEX9f9a"
+            );
+        });
 
-        it("Redeem yield from Compound", async() => {
-            expect(
-                await shProduct.redeemYieldFromComp(cUSDCAddr)
-            ).to.emit(shProduct, "RedeemYieldFromComp").withArgs(cUSDCAddr);
-            expect(await shProduct.isDistributed()).to.equal(false);
+        it("new issuance", async() => {
+            const prevTokenId = await shProduct.prevTokenId();
+            const prevSupply = await shNFT.balanceOf(user2.address, prevTokenId);
+            await shProduct.issuance();
+            const currentTokenID = await shProduct.currentTokenId();
+            expect(await shNFT.balanceOf(user2.address, currentTokenID)).to.equal(prevSupply);
         });
     });
 
     describe("Pausable", () => {
-        const productName = "BTC Defensive Spread";
+        const productName = "ETH Bullish Spread";
         const issuanceCycle = {
             coupon: 10,
-            strikePrice1: 25000,
-            strikePrice2: 20000,
+            strikePrice1: 24000,
+            strikePrice2: 22000,
             strikePrice3: 0,
             strikePrice4: 0,
+            tr1: 11750,
+            tr2: 10040,
+            issuanceDate: 1675872000,
+            maturityDate: 1675958400,
+            apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
-        };
+        }
 
         it("Pause the products", async() => {
             await shProduct.pause();
@@ -275,12 +394,12 @@ describe("SHFactory test suite", function () {
 
             expect(await shFactory.createProduct(
                 productName,
-                "BTC/USD",
+                "ETH/USDC",
                 usdc.address,
                 owner.address,
                 shNFT.address,
                 qredoWallet,
-                1000000,
+                10000,
                 issuanceCycle
             )).to.be.emit(shFactory, "ProductCreated");
         });
@@ -291,12 +410,12 @@ describe("SHFactory test suite", function () {
 
             await expect(shFactory.createProduct(
                 productName,
-                "BTC/USD",
+                "ETH/USDC",
                 usdc.address,
                 owner.address,
                 shNFT.address,
                 qredoWallet,
-                1000000,
+                10000,
                 issuanceCycle
             )).to.be.revertedWith("Product already exists");
         });
