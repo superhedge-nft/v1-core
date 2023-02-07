@@ -110,7 +110,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     );
 
     /// @notice Event emitted when new issuance cycle is updated
-    event UpdateIssuanceCycle(
+    event UpdateParameters(
         uint256 _coupon,
         uint256 _strikePrice1,
         uint256 _strikePrice2,
@@ -126,7 +126,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _optionProfit,
         uint256 _prevTokenId,
         uint256 _currentTokenId,
-        uint256 _numOfNftHolders,
+        uint256 _numOfHolders,
         uint256 _timestamp
     );
 
@@ -136,10 +136,13 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
 
     event Issuance(
         uint256 _currentTokenId,
+        uint256 _prevHolders,
         uint256 _timestamp
     );
 
     event Mature(
+        uint256 _prevTokenId,
+        uint256 _currentTokenId,
         uint256 _timestamp
     );
     
@@ -293,6 +296,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     function issuance() external whenNotPaused onlyLocked onlyWhitelisted {
         // burn the token of the last cycle, auto-roll of principal on next cycle
         address[] memory totalHolders = ISHNFT(shNFT).accountsByToken(prevTokenId);
+
         for (uint256 i = 0; i < totalHolders.length; i++) {
             uint256 prevSupply = ISHNFT(shNFT).balanceOf(totalHolders[i], prevTokenId);
             if (prevSupply > 0) {
@@ -303,7 +307,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
 
         status = Status.Issued;
 
-        emit Issuance(currentTokenId, block.timestamp);
+        emit Issuance(currentTokenId, totalHolders.length, block.timestamp);
     }
 
     function mature() external whenNotPaused onlyIssued onlyWhitelisted {
@@ -315,7 +319,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
 
         status = Status.Mature;
 
-        emit Mature(block.timestamp);
+        emit Mature(prevTokenId, currentTokenId, block.timestamp);
     }
 
     /**
@@ -323,6 +327,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
      */
     function weeklyCoupon() external whenNotPaused onlyIssued onlyWhitelisted {
         address[] memory totalHolders = ISHNFT(shNFT).accountsByToken(currentTokenId);
+
         for (uint256 i = 0; i < totalHolders.length; i++) {
             uint256 tokenSupply = ISHNFT(shNFT).balanceOf(totalHolders[i], currentTokenId);
             if (tokenSupply > 0) {
@@ -406,7 +411,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     /**
      * @dev Update all parameters for next issuance cycle, called by only manager
      */
-    function updateIssuanceCycle(
+    function updateParameters(
         uint256 _coupon,
         uint256 _strikePrice1,
         uint256 _strikePrice2,
@@ -417,7 +422,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         string memory _apy,
         string memory _uri
     ) external LockedOrMature onlyManager {
-        
+
         updateCoupon(_coupon);
 
         updateStrikePrices(_strikePrice1, _strikePrice2, _strikePrice3, _strikePrice4);
@@ -428,7 +433,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
 
         updateURI(_uri);
 
-        emit UpdateIssuanceCycle(
+        emit UpdateParameters(
             _coupon, 
             _strikePrice1, 
             _strikePrice2,
@@ -491,6 +496,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     function withdrawPrincipal() external nonReentrant onlyAccepted {
         uint256 prevSupply = ISHNFT(shNFT).balanceOf(msg.sender, prevTokenId);
         uint256 currentSupply = ISHNFT(shNFT).balanceOf(msg.sender, currentTokenId);
+
         uint256 totalSupply = prevSupply + currentSupply;
 
         require(totalSupply > 0, "No principal");
