@@ -28,30 +28,40 @@ async function main() {
 
     console.log(`SHNFT deployed at ${shNFT.address}`);
 
+    /* const nftAddr = "0x17638b30e5d8440CdBFbFF7609D2a1493CD9cb73";
+    const SHNFT = await ethers.getContractFactory("SHNFT");
+    const shNFT = await upgrades.upgradeProxy(nftAddr, SHNFT);
+    console.log("SHNFT upgraded"); */
+
     const usdc = "0x07865c6E87B9F70255377e024ace6630C1Eaa37F";
 
     const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
     const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; // Qredo Metamask Institutional
 
-    const productName = "BTC Bullish Spread"
+    const productName = "ETH Bullish Spread"
     const issuanceCycle = {
         coupon: 10,
-        strikePrice1: 25000,
-        strikePrice2: 20000,
+        strikePrice1: 1400,
+        strikePrice2: 1600,
         strikePrice3: 0,
         strikePrice4: 0,
+        tr1: 11750,
+        tr2: 10040,
+        issuanceDate: 1675958400,
+        maturityDate: 1676131200,
+        apy: "7-15%",
         uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
     }
 
     // Create new product
     const tx = await shFactory.createProduct(
         productName, // product name
-        "BTC/USDC", // underlying
+        "ETH/USDC", // underlying
         usdc, // USDC address on Goerli testnet
         manager,
         shNFT.address, // ERC1155 NFT address
         qredoWallet, // QREDO Wallet
-        100000, // Max capacity
+        10000, // Max capacity
         issuanceCycle // First issuance cycle
     );
   
