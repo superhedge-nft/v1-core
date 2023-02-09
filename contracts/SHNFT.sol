@@ -55,8 +55,8 @@ contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
         name = _name;
         symbol = _symbol;
 
-        _setupRole(OWNER_ROLE, msg.sender);
-        _setupRole(ADMIN_ROLE, _factory);
+        _grantRole(OWNER_ROLE, msg.sender);
+        _grantRole(ADMIN_ROLE, _factory);
         _setRoleAdmin(MINTER_ROLE, ADMIN_ROLE);
     }
 
@@ -66,7 +66,7 @@ contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
      * @return tokenURI string uri
      */
     function uri(uint256 _id) public view override returns (string memory) {
-        require(_exists(_id), "ERC1155#uri: NONEXISTENT_TOKEN");
+        // require(_exists(_id), "ERC1155#uri: NONEXISTENT_TOKEN");
         return _tokenURIs[_id];
     }
 
@@ -95,7 +95,6 @@ contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
 
         if (bytes(_uri).length > 0) {
             _setTokenURI(_id, _uri);
-            emit URI(_uri, _id);
         }
         _mint(_to, _id, _amount, bytes(""));
 
@@ -134,8 +133,8 @@ contract SHNFT is ERC1155Upgradeable, AccessControlUpgradeable {
     function setTokenURI(
         uint256 _id, 
         string calldata _uri
-    ) external onlyRole(OWNER_ROLE) {
-        require(_exists(_id), "ERC1155#uri: NONEXISTENT_TOKEN");
+    ) external {
+        require(hasRole(OWNER_ROLE, msg.sender) || hasRole(MINTER_ROLE, msg.sender), "Neither owners nor products");
         require(bytes(_uri).length > 0, "uri should not be an empty string");
         _setTokenURI(_id, _uri);
     }
