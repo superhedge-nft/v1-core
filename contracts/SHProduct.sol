@@ -164,6 +164,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     );
 
     event UpdateURI(
+        uint256 _currentTokenId,
         string _uri
     );
 
@@ -203,6 +204,12 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
 
         currency = _currency;
         shNFT = _shNFT;
+
+        require(_issuanceCycle.issuanceDate > block.timestamp, 
+            "Issuance date should be bigger than current timestamp");
+        require(_issuanceCycle.maturityDate > _issuanceCycle.issuanceDate, 
+            "Maturity timestamp should be bigger than issuance one");
+        
         issuanceCycle = _issuanceCycle;
 
         ISHNFT(_shNFT).tokenIdIncrement();
@@ -379,9 +386,10 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     function updateURI(
         string memory _newUri
     ) public LockedOrMature onlyManager {
+        ISHNFT(shNFT).setTokenURI(currentTokenId, _newUri);
         issuanceCycle.uri = _newUri;
 
-        emit UpdateURI(_newUri);
+        emit UpdateURI(currentTokenId, _newUri);
     }
 
     /**
@@ -453,6 +461,11 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _issuanceDate,
         uint256 _maturityDate
     ) external onlyMature onlyManager {
+        require(_issuanceDate > block.timestamp, 
+            "Issuance timestamp should be bigger than current one");
+        require(_maturityDate > _issuanceDate, 
+            "Maturity timestamp should be bigger than issuance one");
+        
         issuanceCycle.issuanceDate = _issuanceDate;
         issuanceCycle.maturityDate = _maturityDate;
 
