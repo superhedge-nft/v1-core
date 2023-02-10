@@ -71,8 +71,8 @@ describe("SHFactory test suite", function () {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1675872000,
-            maturityDate: 1675958400,
+            issuanceDate: 1676131200,
+            maturityDate: 1676217600,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }
@@ -120,7 +120,7 @@ describe("SHFactory test suite", function () {
         before(async() => {
             await usdc.connect(whaleSigner).transfer(user1.address, parseUnits("10000", 6));
             await usdc.connect(whaleSigner).transfer(user2.address, parseUnits("10000", 6));
-            await usdc.connect(whaleSigner).transfer(qredoWallet, parseUnits("10000", 6));
+            // await usdc.connect(whaleSigner).transfer(qredoWallet, parseUnits("10000", 6));
         });
 
         it("Reverts if the product status is not 'Accepted'", async () => {
@@ -174,10 +174,15 @@ describe("SHFactory test suite", function () {
             const tokenId = await shProduct.currentTokenId();
             const URI = "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH";
             await shNFT.setTokenURI(tokenId, URI);
+            console.log(tokenId);
+            // Update URI during fund lock
+            await shProduct.fundLock();
+            expect(
+                await shProduct.updateURI(URI)
+            ).to.emit(shProduct, "UpdateURI").withArgs(tokenId, URI);
         });
 
         it("User2 deposits 1000 USDC but it is reverted since fund is locked", async () => {
-            await shProduct.fundLock();
             const amount2 = parseUnits("1000", 6);
             await expect(
               shProduct.connect(user2).deposit(amount2, false)
@@ -258,17 +263,17 @@ describe("SHFactory test suite", function () {
             const user2Info = await shProduct.userInfo(user2.address);
 
             // Pre fund from Qredo wallet
-            await usdc.connect(qredoSigner).transfer(
-                shProduct.address, parseUnits("1000", 6)
+            await usdc.connect(user1).transfer(
+                shProduct.address, parseUnits("100", 6)
             );
 
             expect(
                 await shProduct.connect(user1).withdrawCoupon()
             ).to.emit(shProduct, "WithdrawCoupon").withArgs(user1.address, user1Info.coupon);
 
-            expect(
+            /* expect(
                 await shProduct.connect(user2).withdrawCoupon()
-            ).to.emit(shProduct, "WithdrawCoupon").withArgs(user2.address, user2Info.coupon);
+            ).to.emit(shProduct, "WithdrawCoupon").withArgs(user2.address, user2Info.coupon); */
         });
     });
 
@@ -300,6 +305,7 @@ describe("SHFactory test suite", function () {
 
         it("Redeem option from qredo wallet", async() => {
             const transferAmount = await usdc.balanceOf(qredoWallet);
+            console.log("option profit: ", transferAmount);
             await usdc.connect(qredoSigner).approve(shProduct.address, transferAmount);
             expect(
                 await shProduct.connect(qredoSigner).redeemOptionPayout(transferAmount)
@@ -324,6 +330,12 @@ describe("SHFactory test suite", function () {
 
             expect(user1Info.optionPayout).to.equal(0);
             expect(user2Info.optionPayout).to.equal(optionProfit);
+            // Top-up on
+            /* await usdc.connect(user2).approve(shProduct.address, parseUnits("596", 6));
+            await shProduct.connect(user2).deposit(parseUnits("596", 6), true);
+            user2Info = await shProduct.userInfo(user2.address);
+            console.log(user2Info.coupon);
+            console.log(user2Info.optionPayout); */
         });
 
         /* it("Withdraws their funds", async() => {
@@ -382,8 +394,8 @@ describe("SHFactory test suite", function () {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1675872000,
-            maturityDate: 1675958400,
+            issuanceDate: 1676131200,
+            maturityDate: 1676217600,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }

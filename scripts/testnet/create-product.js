@@ -7,10 +7,10 @@
 const { ethers, upgrades } = require("hardhat");
 
 async function main() {
-    const factoryAddr = "0xa8B68a1e2400Fe67984A2d4197a063c56b0d0771";
+    const factoryAddr = "0xeD3659AD096D8b3E8279881c36DD44ce8Cc4b0EF";
     const shFactory = await ethers.getContractAt("SHFactory", factoryAddr);
 
-    const nftAddr = "0x17638b30e5d8440CdBFbFF7609D2a1493CD9cb73";
+    const nftAddr = "0x1be59D15ecf1a9c3Aa25102F61d746aC360aE3B4";
 
     const usdc = "0x07865c6E87B9F70255377e024ace6630C1Eaa37F";
 
@@ -18,13 +18,19 @@ async function main() {
     const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; // Qredo Metamask Institutional
 
     const productName = "ETH Bullish Spread 3"
+
     const issuanceCycle = {
         coupon: 10,
         strikePrice1: 1400,
         strikePrice2: 1600,
         strikePrice3: 0,
         strikePrice4: 0,
-        uri: "https://gateway.pinata.cloud/ipfs/QmW4rgKbPm7cGtb2wNUc8x374taPPTNAi5FYXW7oKaW3U9"
+        tr1: 11750,
+        tr2: 10040,
+        issuanceDate: 1676131200,
+        maturityDate: 1676217600,
+        apy: "7-15%",
+        uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
     }
 
     // Create new product

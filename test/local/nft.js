@@ -21,14 +21,8 @@ describe("SHNFT test suite", function () {
         expect(await shNFT.currentTokenID()).to.equal(0);
     });
 
-    it("Reverts if token ID does not exist", async() => {
-        await expect(
-            shNFT.uri(1)
-        ).to.be.revertedWith("ERC1155#uri: NONEXISTENT_TOKEN");
-    });
-
     it("Returns total quantity for a token ID", async() => {
-        expect(await shNFT.tokenSupply(1)).to.equal(0);
+        expect(await shNFT.totalSupply(1)).to.equal(0);
     });
 
     it("Set token URI", async () => {
@@ -37,8 +31,15 @@ describe("SHNFT test suite", function () {
             shNFT.connect(owner2).setTokenURI(1, uri)
         ).to.be.reverted;
 
-        await expect(
-            shNFT.setTokenURI(1, uri)
-        ).to.be.revertedWith("ERC1155#uri: NONEXISTENT_TOKEN");
+        const tokenId = await shNFT.currentTokenID();
+        expect(
+            await shNFT.setTokenURI(tokenId, uri)
+        ).to.emit(shNFT, "URI").withArgs(uri, tokenId);
+    });
+
+    it("Set owner role", async() => {
+        expect(
+            await shNFT.setRoleOwner(owner2.address)
+        ).to.emit(shNFT, "RoleGranted");
     });
 });
