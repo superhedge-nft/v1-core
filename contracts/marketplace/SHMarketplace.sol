@@ -171,7 +171,7 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @param _tokenId Token ID of NFT
     /// @param _quantity token amount to list (needed for ERC-1155 NFTs, set as 1 for ERC-721)
     /// @param _payToken Paying token
-    /// @param _pricePerItem sale price for each iteam
+    /// @param _pricePerItem sale price for each item
     /// @param _startingTime scheduling for a future sale
     function listItem(
         address _nftAddress,
