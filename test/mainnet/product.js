@@ -71,8 +71,8 @@ describe("SHFactory test suite", function () {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1676131200,
-            maturityDate: 1676217600,
+            issuanceDate: 1677600000,
+            maturityDate: 1680019200,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }
@@ -288,8 +288,8 @@ describe("SHFactory test suite", function () {
         });
 
         it("Update issuance & maturity dates", async() => {
-            const issuanceDate = 1676044800;
-            const maturityDate = 1676131200;
+            const issuanceDate = 1677600000;
+            const maturityDate = 1680019200;
 
             expect(
                 await shProduct.updateTimes(issuanceDate, maturityDate)
@@ -371,7 +371,7 @@ describe("SHFactory test suite", function () {
             await shProduct.updateTRs(11560, 10830);
             await shProduct.updateAPY("8-13%");
             await shProduct.updateParameters(
-                15, 1300, 1500, 0, 0, 11560, 10830, "8-12%", "https://ipfs.filebase.io/ipfs/QmaXPe1yB864wN4jjFff645n78yzuGB2hMrNxQNvEX9f9a"
+                20, 1300, 1500, 0, 0, 11560, 10830, "8-12%", "https://ipfs.filebase.io/ipfs/QmaXPe1yB864wN4jjFff645n78yzuGB2hMrNxQNvEX9f9a"
             );
         });
 
@@ -394,8 +394,8 @@ describe("SHFactory test suite", function () {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1676131200,
-            maturityDate: 1676217600,
+            issuanceDate: 1677600000,
+            maturityDate: 1680019200,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }

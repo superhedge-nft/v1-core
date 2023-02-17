@@ -352,7 +352,6 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     function updateCoupon(
         uint256 _newCoupon
     ) public LockedOrMature onlyManager {
-        require(issuanceCycle.coupon != _newCoupon, "Same coupon rate");
         issuanceCycle.coupon = _newCoupon;
 
         emit UpdateCoupon(_newCoupon);
