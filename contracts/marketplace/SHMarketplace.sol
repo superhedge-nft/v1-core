@@ -33,6 +33,7 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     event ItemListed(
         address indexed owner,
         address indexed nft,
+        address indexed product,
         uint256 tokenId,
         uint256 quantity,
         address payToken,
@@ -168,6 +169,7 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     /// @notice Method for listing NFT
     /// @param _nftAddress Address of NFT contract
+    /// @param _productAddress Address of structured product
     /// @param _tokenId Token ID of NFT
     /// @param _quantity token amount to list (needed for ERC-1155 NFTs, set as 1 for ERC-721)
     /// @param _payToken Paying token
@@ -175,6 +177,7 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @param _startingTime scheduling for a future sale
     function listItem(
         address _nftAddress,
+        address _productAddress,
         uint256 _tokenId,
         uint256 _quantity,
         address _payToken,
@@ -202,9 +205,11 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _pricePerItem,
             _startingTime
         );
+
         emit ItemListed(
             _msgSender(),
             _nftAddress,
+            _productAddress,
             _tokenId,
             _quantity,
             _payToken,
