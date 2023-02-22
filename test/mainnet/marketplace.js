@@ -54,34 +54,42 @@ describe("SHMarketplace test suite", () => {
     });
 
     describe("Create product", () => {
-        const productName = "BTC Defensive Spread";
-        const tokenURI = "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH";
-
+        const productName = "ETH Bullish Spread";
+    
         const issuanceCycle = {
             coupon: 10,
-            strikePrice1: 25000,
-            strikePrice2: 20000,
+            strikePrice1: 1400,
+            strikePrice2: 1600,
             strikePrice3: 0,
             strikePrice4: 0,
-            uri: tokenURI
+            tr1: 11750,
+            tr2: 10040,
+            issuanceDate: 1677600000,
+            maturityDate: 1680019200,
+            apy: "7-15%",
+            uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }
+
+        const qredoWallet = "0xebC37b9cb1657C50676526d28fFfFd54B0A06be2";
 
         it("Product created", async() => {
             expect(await shFactory.createProduct(
                 productName,
-                "BTC/USD",
+                "ETH/USDC",
                 mockUSDC.address,
                 owner.address,
                 shNFT.address,
-                qredoDeribit.address,
-                1000000,
+                qredoWallet,
+                100000,
                 issuanceCycle
               )).to.be.emit(shFactory, "ProductCreated");
-
-            // get product
-            const productAddr = await shFactory.getProduct(productName);
-            const SHProduct = await ethers.getContractFactory("SHProduct");
-            shProduct = SHProduct.attach(productAddr);
+          
+              expect(await shFactory.numOfProducts()).to.equal(1);
+          
+              // get product
+              const productAddr = await shFactory.getProduct(productName);
+              const SHProduct = await ethers.getContractFactory("SHProduct");
+              shProduct = SHProduct.attach(productAddr);
         });
 
         it("User1 deposits 2000 USDC and receive NFT token", async() => {
@@ -94,7 +102,7 @@ describe("SHMarketplace test suite", () => {
             await mockUSDC.connect(user1).approve(shProduct.address, amount);
 
             expect(
-                await shProduct.connect(user1).deposit(amount)
+                await shProduct.connect(user1).deposit(amount, false)
             ).to.be.emit(shProduct, "Deposit");
         });
     });
@@ -110,6 +118,7 @@ describe("SHMarketplace test suite", () => {
         it("Reverts unless the users hold enough nfts", async() => {
             await expect(shMarketplace.listItem(
                 shNFT.address,
+                shProduct.address,
                 currentTokenID,
                 2,
                 mockUSDC.address,
@@ -121,6 +130,7 @@ describe("SHMarketplace test suite", () => {
         it("Reverts if a nft is not approved", async() => {
             await expect(shMarketplace.connect(user1).listItem(
                 shNFT.address,
+                shProduct.address,
                 currentTokenID,
                 2,
                 mockUSDC.address,
@@ -134,6 +144,7 @@ describe("SHMarketplace test suite", () => {
 
             await expect(shMarketplace.connect(user1).listItem(
                 shNFT.address,
+                shProduct.address,
                 currentTokenID,
                 2,
                 mockUSDC.address,
@@ -147,19 +158,21 @@ describe("SHMarketplace test suite", () => {
 
             expect(await shMarketplace.connect(user1).listItem(
                 shNFT.address,
+                shProduct.address,
                 currentTokenID,
                 2,
                 mockUSDC.address,
                 parseUnits('1100', 6),
                 startingTime
             )).to.be.emit(shMarketplace, "ItemListed").withArgs(
-                user1.address, shNFT.address, currentTokenID, 2, mockUSDC.address, parseUnits('1100', 6), startingTime
+                user1.address, shNFT.address, shProduct.address, currentTokenID, 2, mockUSDC.address, parseUnits('1100', 6), startingTime
             );
         });
 
         it("Reverts if an item was already listed", async() => {
             await expect(shMarketplace.connect(user1).listItem(
                 shNFT.address,
+                shProduct.address,
                 currentTokenID,
                 2,
                 mockUSDC.address,
