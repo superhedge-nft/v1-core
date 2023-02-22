@@ -21,15 +21,6 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 optionPayout;
     }
 
-    /// @notice Enum representing product status
-    enum Status {
-        Pending,
-        Accepted,
-        Locked,
-        Issued,
-        Mature
-    }
-
     string public name;
     string public underlying;
 
@@ -44,7 +35,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     uint256 public currentTokenId;
     uint256 public prevTokenId;
 
-    Status public status;
+    DataTypes.Status public status;
     DataTypes.IssuanceCycle public issuanceCycle;
     
     mapping(address => UserInfo) public userInfo;
@@ -231,27 +222,27 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     }
 
     modifier onlyAccepted() {
-        require(status == Status.Accepted, "Not accepted status");
+        require(status == DataTypes.Status.Accepted, "Not accepted status");
         _;
     }
 
     modifier onlyLocked() {
-        require(status == Status.Locked, "Not locked status");
+        require(status == DataTypes.Status.Locked, "Not locked status");
         _;
     }
 
     modifier onlyIssued() {
-        require(status == Status.Issued, "Not issued status");
+        require(status == DataTypes.Status.Issued, "Not issued status");
         _;
     }
 
     modifier onlyMature() {
-        require(status == Status.Mature, "Not mature status");
+        require(status == DataTypes.Status.Mature, "Not mature status");
         _;
     }
 
     modifier LockedOrMature() {
-        require(status == Status.Locked || status == Status.Mature, 
+        require(status == DataTypes.Status.Locked || status == DataTypes.Status.Mature, 
             "Neither mature nor locked");
         _;
     }
@@ -283,7 +274,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
             optionProfit = 0;
         }
         // Then update status
-        status = Status.Accepted;
+        status = DataTypes.Status.Accepted;
 
         emit FundAccept(
             _optionProfit, 
@@ -295,7 +286,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     }
 
     function fundLock() external whenNotPaused onlyAccepted onlyWhitelisted {
-        status = Status.Locked;
+        status = DataTypes.Status.Locked;
 
         emit FundLock(block.timestamp);
     }
@@ -312,7 +303,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
             }
         }
 
-        status = Status.Issued;
+        status = DataTypes.Status.Issued;
 
         emit Issuance(currentTokenId, totalHolders.length, block.timestamp);
     }
@@ -324,7 +315,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         ISHNFT(shNFT).tokenIdIncrement();
         currentTokenId = ISHNFT(shNFT).currentTokenID();
 
-        status = Status.Mature;
+        status = DataTypes.Status.Mature;
 
         emit Mature(prevTokenId, currentTokenId, block.timestamp);
     }

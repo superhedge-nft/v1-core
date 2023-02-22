@@ -16,4 +16,13 @@ library DataTypes {
         string apy;
         string uri;
     }
+
+    /// @notice Enum representing product status
+    enum Status {
+        Pending,
+        Accepted,
+        Locked,
+        Issued,
+        Mature
+    }
 }
