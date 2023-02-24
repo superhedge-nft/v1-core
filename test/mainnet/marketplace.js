@@ -110,6 +110,9 @@ describe("SHMarketplace test suite", () => {
     describe("List and update NFTs", () => {
         let currentTokenID, startingTime;
         before(async() => {
+            await shProduct.fundLock();
+            await shProduct.issuance();
+
             await shMarketplace.connect(owner).updateAddressRegistry(addressRegistry.address);
             currentTokenID = await shProduct.currentTokenId();
             startingTime = Math.floor(Date.now() / 1000) + 1 * 24 * 3600;
@@ -167,6 +170,8 @@ describe("SHMarketplace test suite", () => {
             )).to.be.emit(shMarketplace, "ItemListed").withArgs(
                 user1.address, shNFT.address, shProduct.address, currentTokenID, 2, mockUSDC.address, parseUnits('1100', 6), startingTime
             );
+
+            expect(await shNFT.balanceOf(shMarketplace.address, currentTokenID)).to.equal(2);
         });
 
         it("Reverts if an item was already listed", async() => {
@@ -189,7 +194,7 @@ describe("SHMarketplace test suite", () => {
                 mockUSDC.address,
                 newPrice
             )).to.be.emit(shMarketplace, "ItemUpdated").withArgs(
-                user1.address, shNFT.address, currentTokenID, mockUSDC.address, newPrice
+                user1.address, shNFT.address, shProduct.address, currentTokenID, mockUSDC.address, newPrice
             );
         });
     });
