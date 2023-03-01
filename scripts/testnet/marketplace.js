@@ -43,9 +43,9 @@ async function main() {
     console.log(`SHMarketplace deployed at ${shMarketplace.address}`);
 
     // Upgrade Marketplace contract
-    /* const marketplaceAddr = "0x2462e81559750ddc2447A3b2dE54dC3E3eBc1f21";
+    /* const marketplaceAddr = "0xB6C5423e7579953227D861Bc49f8c4e49A8398c5";
     const SHMarketplace = await ethers.getContractFactory("SHMarketplace");
-    const shMarketplace = await upgrades.forceImport(marketplaceAddr, SHMarketplace);
+    const shMarketplace = await upgrades.upgradeProxy(marketplaceAddr, SHMarketplace);
     console.log("SHMarketplace upgraded"); */
 }
 

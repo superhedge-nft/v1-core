@@ -64,8 +64,8 @@ describe("SHMarketplace test suite", () => {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1677600000,
-            maturityDate: 1680019200,
+            issuanceDate: 1678484469,
+            maturityDate: 1680298869,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }
@@ -98,7 +98,7 @@ describe("SHMarketplace test suite", () => {
 
             await shProduct.fundAccept();
 
-            const amount = parseUnits("2000", 6);
+            const amount = parseUnits("5000", 6);
             await mockUSDC.connect(user1).approve(shProduct.address, amount);
 
             expect(
@@ -108,7 +108,10 @@ describe("SHMarketplace test suite", () => {
     });
 
     describe("List and update NFTs", () => {
-        let currentTokenID, startingTime;
+        let currentTokenID, startingTime, listingId;
+        const quantity1 = 2;
+        const quantity2 = 3;
+
         before(async() => {
             await shProduct.fundLock();
             await shProduct.issuance();
@@ -123,7 +126,7 @@ describe("SHMarketplace test suite", () => {
                 shNFT.address,
                 shProduct.address,
                 currentTokenID,
-                2,
+                quantity1,
                 mockUSDC.address,
                 parseUnits('1000', 6),
                 startingTime
@@ -135,7 +138,7 @@ describe("SHMarketplace test suite", () => {
                 shNFT.address,
                 shProduct.address,
                 currentTokenID,
-                2,
+                quantity1,
                 mockUSDC.address,
                 parseUnits('1000', 6),
                 startingTime
@@ -149,7 +152,7 @@ describe("SHMarketplace test suite", () => {
                 shNFT.address,
                 shProduct.address,
                 currentTokenID,
-                2,
+                quantity1,
                 mockUSDC.address,
                 parseUnits('1000', 6),
                 startingTime
@@ -159,48 +162,91 @@ describe("SHMarketplace test suite", () => {
         it("Successfully lists item", async() => {
             await tokenRegistry.connect(owner).add(mockUSDC.address);
 
+            listingId = await shMarketplace.nextListingId();
+
             expect(await shMarketplace.connect(user1).listItem(
                 shNFT.address,
                 shProduct.address,
                 currentTokenID,
-                2,
+                quantity1,
                 mockUSDC.address,
                 parseUnits('1100', 6),
                 startingTime
             )).to.be.emit(shMarketplace, "ItemListed").withArgs(
-                user1.address, shNFT.address, shProduct.address, currentTokenID, 2, mockUSDC.address, parseUnits('1100', 6), startingTime
+                user1.address, 
+                shNFT.address, 
+                shProduct.address, 
+                currentTokenID, 
+                quantity1, 
+                mockUSDC.address, 
+                parseUnits('1100', 6), 
+                startingTime,
+                listingId
             );
 
-            expect(await shNFT.balanceOf(shMarketplace.address, currentTokenID)).to.equal(2);
-        });
+            expect(
+                await shNFT.balanceOf(shMarketplace.address, currentTokenID)
+            ).to.equal(quantity1);
 
-        it("Reverts if an item was already listed", async() => {
-            await expect(shMarketplace.connect(user1).listItem(
-                shNFT.address,
-                shProduct.address,
-                currentTokenID,
-                2,
-                mockUSDC.address,
-                parseUnits('1100', 6),
-                startingTime
-            )).to.be.revertedWith("already listed");
+            expect(
+                await shNFT.balanceOf(user1.address, currentTokenID)
+            ).to.equal(quantity2);
         });
 
         it("Successfully updates item", async() => {
             const newPrice = parseUnits('1200', 6);
             expect(await shMarketplace.connect(user1).updateListing(
-                shNFT.address,
-                currentTokenID,
+                listingId,
                 mockUSDC.address,
                 newPrice
             )).to.be.emit(shMarketplace, "ItemUpdated").withArgs(
-                user1.address, shNFT.address, shProduct.address, currentTokenID, mockUSDC.address, newPrice
+                user1.address, 
+                mockUSDC.address, 
+                newPrice,
+                listingId
             );
+        });
+
+        it("Create another listing", async() => {
+            listingId = await shMarketplace.nextListingId();
+
+            expect(await shMarketplace.connect(user1).listItem(
+                shNFT.address,
+                shProduct.address,
+                currentTokenID,
+                quantity2,
+                mockUSDC.address,
+                parseUnits('1200', 6),
+                startingTime
+            )).to.be.emit(shMarketplace, "ItemListed").withArgs(
+                user1.address, 
+                shNFT.address, 
+                shProduct.address, 
+                currentTokenID, 
+                quantity2, 
+                mockUSDC.address, 
+                parseUnits('1200', 6), 
+                startingTime,
+                listingId
+            );
+
+            expect(
+                await shNFT.balanceOf(shMarketplace.address, currentTokenID)
+            ).to.equal(quantity1 + quantity2);
+
+            expect(
+                await shNFT.balanceOf(user1.address, currentTokenID)
+            ).to.equal(0);
+
+            console.log(listingId);
         });
     });
 
     describe("Buy NFTs", () => {
         let currentTokenID;
+        const listingId1 = 1;
+        const listingId2 = 2;
+
         before(async() => {
             currentTokenID = await shProduct.currentTokenId();
 
@@ -210,15 +256,24 @@ describe("SHMarketplace test suite", () => {
             await priceFeed.registerOracle(mockUSDC.address, usdcOracle);
         });
         
-        it("Reverts if an item is not buyable", async() => {
+        it("Reverts if a buyer is a seller", async() => {
             await expect(
-                shMarketplace.connect(user2).buyItem(
-                    shNFT.address,
-                    currentTokenID,
+                shMarketplace.connect(user1).buyItem(
+                    listingId1,
                     mockUSDC.address,
                     user1.address
                 )
-            ).to.be.revertedWith("item not buyable");
+            ).to.be.revertedWith("Buyer should be different from seller");
+        });
+
+        it("Reverts if an item is not buyable", async() => {
+            await expect(
+                shMarketplace.connect(user2).buyItem(
+                    listingId1,
+                    mockUSDC.address,
+                    user1.address
+                )
+            ).to.be.revertedWith("Item not buyable");
         });
 
         it("Successfully buys NFT", async() => {
@@ -232,14 +287,43 @@ describe("SHMarketplace test suite", () => {
                 .connect(user2)
                 .approve(shMarketplace.address, parseUnits("10000", 6));
 
+            const unitPrice = await shMarketplace.getPrice(mockUSDC.address);
+            
+            let listing1 = await shMarketplace.listings(listingId1);
+
             expect(
                 await shMarketplace.connect(user2).buyItem(
-                    shNFT.address,
-                    currentTokenID,
+                    listingId1,
                     mockUSDC.address,
                     user1.address
                 )
-            ).to.be.emit(shMarketplace, "ItemSold");
+            ).to.be.emit(shMarketplace, "ItemSold").withArgs(
+                user1.address, user2.address, unitPrice, listingId1
+            );
+
+            expect(
+                await mockUSDC.balanceOf(user2.address)
+            ).to.equal(parseUnits("7600", 6)); // 10000 - 1200 * 2 = 7600
+
+            expect(
+                await mockUSDC.balanceOf(user1.address)
+            ).to.equal(parseUnits("7388", 6)); // 5000 + 1200 * 2 * 0.995 = 7388
+            
+            expect(
+                await shNFT.balanceOf(shMarketplace.address, listing1.tokenId)
+            ).to.equal(3);
+
+            expect(
+                await shNFT.balanceOf(user2.address, listing1.tokenId)
+            ).to.equal(2);
+
+            expect(
+                await shNFT.balanceOf(user1.address, listing1.tokenId)
+            ).to.equal(0);
+
+            listing1 = await shMarketplace.listings(listingId1);
+            
+            expect(listing1.listingId).to.equal(0);
         });
     });
 });
