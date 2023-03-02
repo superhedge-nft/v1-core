@@ -8,7 +8,7 @@ interface ISHProduct {
 
     function shNFT() external view returns (address);
 
-    function deposit(uint256 _amount) external;
+    function deposit(uint256 _amount, bool _type) external;
 
     function paused() external view returns (bool);
 

@@ -7,8 +7,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHNFT.sol";
-import "./interfaces/clearpool/IPoolMaster.sol";
-import "./interfaces/compound/ICErc20.sol";
+import "./interfaces/moonwell/IMErc20.sol";
 import "./libraries/DataTypes.sol";
 import "./libraries/Array.sol";
 
@@ -78,26 +77,15 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _amount
     );
 
-    event DistributeWithClear(
+    event DistributeWithMoon(
         address indexed _qredoDeribit,
         uint256 _optionRate,
-        address[] _clearpools,
-        uint256[] _yieldRates
-    );
-
-    event DistributeWithComp(
-        address indexed _qredoDeribit,
-        uint256 _optionRate,
-        address indexed _cErc20Pool,
+        address indexed _mErc20Pool,
         uint256 _yieldRate
     );
-
-    event RedeemYieldFromClear(
-        address[] _clearpools
-    );
     
-    event RedeemYieldFromComp(
-        address _cErc20Pool
+    event RedeemYieldFromMoon(
+        address _mErc20Pool
     );
 
     /// @notice Event emitted when new issuance cycle is updated
@@ -548,9 +536,9 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         emit WithdrawOption(msg.sender, userInfo[msg.sender].optionPayout);
     }
 
-    function distributeWithComp(
+    function distributeWithMoon(
         uint256 _yieldRate,
-        address _cErc20Pool
+        address _mErc20Pool
     ) external onlyManager onlyLocked {
         require(!isDistributed, "Already distributed");
         require(_yieldRate <= 100, "Yield rate should be equal or less than 100");
@@ -564,74 +552,24 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
 
         // Lend into the compound cUSDC pool
         uint256 yieldAmount = currentCapacity * _yieldRate / 100;
-        currency.approve(_cErc20Pool, yieldAmount);
-        ICErc20(_cErc20Pool).mint(yieldAmount);
+        currency.approve(_mErc20Pool, yieldAmount);
+        IMErc20(_mErc20Pool).mint(yieldAmount);
         isDistributed = true;
         
-        emit DistributeWithComp(qredoWallet, optionRate, _cErc20Pool, _yieldRate);
+        emit DistributeWithMoon(qredoWallet, optionRate, _mErc20Pool, _yieldRate);
     }
 
-    function redeemYieldFromComp(
-        address _cErc20Pool
+    function redeemYieldFromMoon(
+        address _mErc20Pool
     ) external onlyManager onlyMature {
         require(isDistributed, "Not distributed");
-        uint256 cTokenAmount = ICErc20(_cErc20Pool).balanceOf(address(this));
+        uint256 cTokenAmount = IMErc20(_mErc20Pool).balanceOf(address(this));
         // Retrieve your asset based on a cToken amount
-        ICErc20(_cErc20Pool).redeem(cTokenAmount);
+        IMErc20(_mErc20Pool).redeem(cTokenAmount);
         isDistributed = false;
 
-        emit RedeemYieldFromComp(_cErc20Pool);
+        emit RedeemYieldFromMoon(_mErc20Pool);
     }
-
-    /**
-     * @notice After the fund is locked, distribute USDC into the Qredo wallet and
-     * the lending pools to generate passive income
-     */
-    function distributeWithClear(
-        uint256[] calldata _yieldRates, 
-        address[] calldata _clearpools
-    ) external onlyManager onlyLocked {
-        require(!isDistributed, "Already distributed");
-        require(_yieldRates.length == _clearpools.length, "Should have the same length");
-        uint256 totalYieldRate = 0;
-        for (uint256 i = 0; i < _yieldRates.length; i++) {
-            totalYieldRate += _yieldRates[i];
-        }
-        require(totalYieldRate <= 100, "Total yield rate should be equal or less than 100");
-        
-        uint256 optionRate = 100 - totalYieldRate;
-        // Transfer option amount to the Qredo wallet
-        if (optionRate > 0) {
-            uint256 optionAmount = currentCapacity * optionRate / 100;
-            currency.transfer(qredoWallet, optionAmount);
-        }
-
-        // Lend into the clearpool
-        for (uint256 i = 0; i < _clearpools.length; i++) {
-            if (_yieldRates[i] > 0) {
-                uint256 yieldAmount = currentCapacity * _yieldRates[i] / 100;
-                currency.approve(_clearpools[i], yieldAmount);
-                IPoolMaster(_clearpools[i]).provide(yieldAmount);
-            }
-        }
-        isDistributed = true;
-        emit DistributeWithClear(qredoWallet, optionRate, _clearpools, _yieldRates);
-    }
-
-    function redeemYieldFromClear(
-        address[] calldata _clearpools
-    ) external onlyManager onlyMature {
-        require(isDistributed, "Not distributed");
-        require(_clearpools.length > 0, "No yield source");
-        for (uint256 i = 0; i < _clearpools.length; i++) {
-            uint256 cpTokenBal = IPoolMaster(_clearpools[i]).balanceOf(address(this));
-            IPoolMaster(_clearpools[i]).redeem(cpTokenBal);
-        }
-        isDistributed = false;
-        
-        emit RedeemYieldFromClear(_clearpools);
-    }
-
 
     /**
      * @dev Transfers option profit from a qredo wallet, called by an owner
