@@ -169,7 +169,6 @@ contract SHMarketplace is ERC1155HolderUpgradeable, OwnableUpgradeable, Reentran
     ) external nonReentrant {
         require(_pricePerItem > 0, "Price must be greater than 0");
         require(_quantity > 0, "Quantity must be greater than 0");
-        require(_startingTime >= block.timestamp, "Invalid starting time");
 
         if (IERC165Upgradeable(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155)) {
             IERC1155Upgradeable nft = IERC1155Upgradeable(_nftAddress);

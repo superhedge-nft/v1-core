@@ -31,7 +31,7 @@ async function main() {
 
     console.log(`TokenRegistry deployed at ${tokenRegistry.address}`); */
 
-    const platformFee = 5; // 0.5% of sales price
+    /* const platformFee = 5; // 0.5% of sales price
     const feeRecipient = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
 
     const SHMarketplace = await ethers.getContractFactory("SHMarketplace");
@@ -40,13 +40,13 @@ async function main() {
     ]);
     await shMarketplace.deployed();
 
-    console.log(`SHMarketplace deployed at ${shMarketplace.address}`);
+    console.log(`SHMarketplace deployed at ${shMarketplace.address}`); */
 
     // Upgrade Marketplace contract
-    /* const marketplaceAddr = "0xB6C5423e7579953227D861Bc49f8c4e49A8398c5";
+    const marketplaceAddr = "0x9e46a406e38eB4e664B9F38b0809444C1d33FFa8";
     const SHMarketplace = await ethers.getContractFactory("SHMarketplace");
     const shMarketplace = await upgrades.upgradeProxy(marketplaceAddr, SHMarketplace);
-    console.log("SHMarketplace upgraded"); */
+    console.log("SHMarketplace upgraded");
 }
 
 // We recommend this pattern to be able to use async/await everywhere
