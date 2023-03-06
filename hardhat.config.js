@@ -18,34 +18,19 @@ module.exports = {
       chainId: 31337,
       forking: {
         enabled: true,
-        url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_MAINNET}`
+        url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`
       }
-    },
-    mumbai: {
-      url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_MUMBAI}`,
-      chainId: 80001,
-      accounts: [process.env.PRIVATE_KEY]
-    },
-    polygon: {
-      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_POLYGON}`,
-      chainId: 137,
-      accounts: [process.env.PRIVATE_KEY]
     },
     moonbase: {
       url: `https://moonbase-alpha.blastapi.io/${process.env.BLAST_PROJECT_ID}`,
       chainId: 1287, // (hex: 0x507),
-      accounts: [process.env.PRIVATE_KEY]
+      accounts: [process.env.PRIVATE_KEY],
+      // gasPrice: 80000000000
     },
     moonbeam: {
       url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`, // Insert your RPC URL here
       chainId: 1284, // (hex: 0x504),
       accounts: [process.env.PRIVATE_KEY]
-    },
-    goerli: {
-      url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_GOERLI}`,
-      chainId: 5,
-      accounts: [process.env.PRIVATE_KEY],
-      gasPrice: 80000000000
     }
   },
   gasReporter: {
