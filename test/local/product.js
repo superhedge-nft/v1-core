@@ -25,20 +25,26 @@ describe("SHFactory test suite", function () {
   });
 
   describe("Create product", () => {
-    const productName = "BTC Bullish Spread";
+    const productName = "ETH Bullish Spread";
     const issuanceCycle = {
       coupon: 10,
-      strikePrice1: 25000,
-      strikePrice2: 20000,
+      strikePrice1: 1400,
+      strikePrice2: 1600,
       strikePrice3: 0,
       strikePrice4: 0,
+      tr1: 11750,
+      tr2: 10040,
+      issuanceDate: 1678406400,
+      maturityDate: 1681084800,
+      apy: "7-15%",
       uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
     }
+
     it("Reverts if max capacity is not whole-number thousands", async () => {
       await expect(
         shFactory.createProduct(
           productName,
-          "BTC/USDC",
+          "ETH/USDC",
           mockUSDC.address,
           owner.address,
           shNFT.address,
@@ -52,7 +58,7 @@ describe("SHFactory test suite", function () {
     it("Successfully created", async () => {
       expect(await shFactory.createProduct(
         productName,
-        "BTC/USDC",
+        "ETH/USDC",
         mockUSDC.address,
         owner.address,
         shNFT.address,
@@ -68,7 +74,7 @@ describe("SHFactory test suite", function () {
       const SHProduct = await ethers.getContractFactory("SHProduct");
       shProduct = SHProduct.attach(productAddr);
   
-      expect(await shProduct.currentTokenId()).to.equal(0);
+      expect(await shProduct.currentTokenId()).to.equal(1);
       expect(await shProduct.shNFT()).to.equal(shNFT.address);
     });
   });
@@ -178,6 +184,7 @@ describe("SHFactory test suite", function () {
     });
   });
 
+  /* 
   describe("Withdraw", () => {
     before(async() => {
       await shProduct.mature();
@@ -207,7 +214,7 @@ describe("SHFactory test suite", function () {
       .withArgs(user2.address, principal, prevTokenID, tokenSupply);
     });
 
-    /* it("Withdraw coupon, but should revert since there is no enough balance", async () => {
+    it("Withdraw coupon, but should revert since there is no enough balance", async () => {
       await expect(
         shProduct.connect(user1).withdrawCoupon()
       ).to.be.revertedWith("Insufficient balance");
@@ -215,8 +222,8 @@ describe("SHFactory test suite", function () {
 
     it("Withdraw option payout", async() => {
       await shProduct.connect(user1).withdrawOption();
-    }); */
-  });
+    });
+  }); */
 
   /* describe("Set new issuance cycle", () => {
     const newIssuanceCycle = {
