@@ -550,7 +550,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
             currency.transfer(qredoWallet, optionAmount);
         }
 
-        // Lend into the compound cUSDC pool
+        // Lend into the Moonwell mUSDC pool
         uint256 yieldAmount = currentCapacity * _yieldRate / 100;
         currency.approve(_mErc20Pool, yieldAmount);
         IMErc20(_mErc20Pool).mint(yieldAmount);
@@ -563,9 +563,9 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         address _mErc20Pool
     ) external onlyManager onlyMature {
         require(isDistributed, "Not distributed");
-        uint256 cTokenAmount = IMErc20(_mErc20Pool).balanceOf(address(this));
-        // Retrieve your asset based on a cToken amount
-        IMErc20(_mErc20Pool).redeem(cTokenAmount);
+        uint256 mTokenAmount = IMErc20(_mErc20Pool).balanceOf(address(this));
+        // Retrieve your asset based on a mToken amount
+        IMErc20(_mErc20Pool).redeem(mTokenAmount);
         isDistributed = false;
 
         emit RedeemYieldFromMoon(_mErc20Pool);
