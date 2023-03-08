@@ -23,9 +23,10 @@ module.exports = {
     },
     moonbase: {
       url: `https://moonbase-alpha.blastapi.io/${process.env.BLAST_PROJECT_ID}`,
+      // url: `https://rpc.api.moonbase.moonbeam.network`,
       chainId: 1287, // (hex: 0x507),
       accounts: [process.env.PRIVATE_KEY],
-      // gasPrice: 80000000000
+      gasPrice: 1000000000,
     },
     moonbeam: {
       url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`, // Insert your RPC URL here
@@ -38,6 +39,6 @@ module.exports = {
     currency: "USD",
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: process.env.MOONSCAN_API_KEY,
   }
 };
