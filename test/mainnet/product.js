@@ -194,6 +194,8 @@ describe("SHFactory test suite", function () {
             .withArgs(qredoWallet, optionRate, mUSDCAddr, yieldRate);
             
             expect(await shProduct.isDistributed()).to.equal(true);
+
+            console.log(await mUSDC.balanceOf(shProduct.address));
         });
         
         it("Check coupon balance", async () => {

@@ -251,7 +251,7 @@ describe("SHMarketplace test suite", () => {
             currentTokenID = await shProduct.currentTokenId();
 
             // USDC/USD aggregator
-            const usdcOracle = "0x8fffffd4afb6115b954bd326cbe7b4ba576818f6";
+            const usdcOracle = "0xA122591F60115D63421f66F752EF9f6e0bc73abC";
             // set USDC/USD price oracle
             await priceFeed.registerOracle(mockUSDC.address, usdcOracle);
         });
