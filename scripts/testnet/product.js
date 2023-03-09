@@ -47,8 +47,8 @@ async function main() {
         strikePrice4: 0,
         tr1: 11750,
         tr2: 10040,
-        issuanceDate: 1675958400,
-        maturityDate: 1676131200,
+        issuanceDate: 1678665600,
+        maturityDate: 1681344000,
         apy: "7-15%",
         uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
     }
