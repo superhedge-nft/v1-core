@@ -19,6 +19,7 @@ module.exports = {
       forking: {
         enabled: true,
         url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`
+        // url: `https://moonbeam.public.blastapi.io`
       }
     },
     moonbase: {
