@@ -17,31 +17,31 @@ async function main() {
     const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
     const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; // Qredo Metamask Institutional
 
-    const productName = "ETH Bullish Spread"
+    const productName = "BTC Bearish Spread"
 
     const issuanceCycle = {
-        coupon: 10,
-        strikePrice1: 1400,
-        strikePrice2: 1600,
+        coupon: 20,
+        strikePrice1: 28000,
+        strikePrice2: 26000,
         strikePrice3: 0,
         strikePrice4: 0,
-        tr1: 11750,
-        tr2: 10040,
-        issuanceDate: 1679329151,
-        maturityDate: 1682007551,
-        apy: "7-15%",
-        uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
+        tr1: 10850,
+        tr2: 11240,
+        issuanceDate: 1680032893,
+        maturityDate: 1682711293,
+        apy: "8-13%",
+        uri: "https://gateway.pinata.cloud/ipfs/QmfXCbDZMpNhPLxxNHuxp7LESMadb9sd3Qkt33Bd9pYJBm"
     }
 
     // Create new product
     const tx = await shFactory.createProduct(
         productName, // product name
-        "ETH/USDC", // underlying
+        "BTC/USDC", // underlying
         usdc, // USDC address on Goerli testnet
         manager,
         nftAddr, // ERC1155 NFT address
         qredoWallet, // QREDO Wallet
-        20000, // Max capacity
+        10000, // Max capacity
         issuanceCycle // First issuance cycle
     );
   

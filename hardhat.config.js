@@ -23,8 +23,8 @@ module.exports = {
       }
     },
     moonbase: {
-      url: `https://moonbase-alpha.blastapi.io/${process.env.BLAST_PROJECT_ID}`,
-      // url: `https://rpc.api.moonbase.moonbeam.network`,
+      // url: `https://moonbase-alpha.blastapi.io/${process.env.BLAST_PROJECT_ID}`,
+      url: `https://rpc.api.moonbase.moonbeam.network`,
       chainId: 1287, // (hex: 0x507),
       accounts: [process.env.PRIVATE_KEY],
       gasPrice: 1000000000,
