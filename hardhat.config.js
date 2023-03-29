@@ -18,20 +18,17 @@ module.exports = {
       chainId: 31337,
       forking: {
         enabled: true,
-        url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`
-        // url: `https://moonbeam.public.blastapi.io`
+        url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_ARBITRUM_MAINNET}`
       }
     },
-    moonbase: {
-      // url: `https://moonbase-alpha.blastapi.io/${process.env.BLAST_PROJECT_ID}`,
-      url: `https://rpc.api.moonbase.moonbeam.network`,
-      chainId: 1287, // (hex: 0x507),
-      accounts: [process.env.PRIVATE_KEY],
-      gasPrice: 1000000000,
+    arbitrumGoerli: {
+      url: `https://arb-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_ARBITRUM_GOERLI}`,
+      chainId: 421613,
+      accounts: [process.env.PRIVATE_KEY]
     },
-    moonbeam: {
-      url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`, // Insert your RPC URL here
-      chainId: 1284, // (hex: 0x504),
+    arbitrumOne: {
+      url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_ARBITRUM_MAINNET}`,
+      chainId: 42161,
       accounts: [process.env.PRIVATE_KEY]
     }
   },
@@ -40,6 +37,6 @@ module.exports = {
     currency: "USD",
   },
   etherscan: {
-    apiKey: process.env.MOONSCAN_API_KEY,
+    apiKey: process.env.ARBISCAN_API_KEY,
   }
 };
