@@ -250,6 +250,8 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     }
 
     function fundAccept() external whenNotPaused onlyWhitelisted {
+        require(status == DataTypes.Status.Pending || status == DataTypes.Status.Mature, 
+            "Neither mature nor pending status");
         // First, distribute option profit to the token holders.
         address[] memory totalHolders = ISHNFT(shNFT).accountsByToken(prevTokenId);
         uint256 _optionProfit = optionProfit;
