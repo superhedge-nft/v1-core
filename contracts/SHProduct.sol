@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHNFT.sol";
-import "./interfaces/moonwell/IMErc20.sol";
+import "./interfaces/aave/IPool.sol";
 import "./libraries/DataTypes.sol";
 import "./libraries/Array.sol";
 
@@ -77,15 +77,16 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _amount
     );
 
-    event DistributeWithMoon(
+    event DistributeWithAave(
         address indexed _qredoDeribit,
         uint256 _optionRate,
-        address indexed _mErc20Pool,
+        address indexed _aaveLPool,
         uint256 _yieldRate
     );
     
-    event RedeemYieldFromMoon(
-        address _mErc20Pool
+    event RedeemYieldFromAave(
+        address _aaveLPool,
+        uint256 _amount
     );
 
     /// @notice Event emitted when new issuance cycle is updated
@@ -538,9 +539,9 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         emit WithdrawOption(msg.sender, userInfo[msg.sender].optionPayout);
     }
 
-    function distributeWithMoon(
+    function distributeWithAave(
         uint256 _yieldRate,
-        address _mErc20Pool
+        address _aaveLPool
     ) external onlyManager onlyLocked {
         require(!isDistributed, "Already distributed");
         require(_yieldRate <= 100, "Yield rate should be equal or less than 100");
@@ -552,25 +553,24 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
             currency.transfer(qredoWallet, optionAmount);
         }
 
-        // Lend into the Moonwell mUSDC pool
+        // Lend into the Aave V3 aUSDC pool
         uint256 yieldAmount = currentCapacity * _yieldRate / 100;
-        currency.approve(_mErc20Pool, yieldAmount);
-        IMErc20(_mErc20Pool).mint(yieldAmount);
+        currency.approve(_aaveLPool, yieldAmount);
+        IPool(_aaveLPool).supply(address(currency), yieldAmount, address(this), 0);
         isDistributed = true;
         
-        emit DistributeWithMoon(qredoWallet, optionRate, _mErc20Pool, _yieldRate);
+        emit DistributeWithAave(qredoWallet, optionRate, _aaveLPool, _yieldRate);
     }
 
-    function redeemYieldFromMoon(
-        address _mErc20Pool
+    function redeemYieldFromAave(
+        address _aaveLPool
     ) external onlyManager onlyMature {
         require(isDistributed, "Not distributed");
-        uint256 mTokenAmount = IMErc20(_mErc20Pool).balanceOf(address(this));
-        // Retrieve your asset based on a mToken amount
-        IMErc20(_mErc20Pool).redeem(mTokenAmount);
+        // Withdraw your asset based on a aToken amount
+        uint256 withdrawAmount = IPool(_aaveLPool).withdraw(address(currency), type(uint256).max, address(this));
         isDistributed = false;
 
-        emit RedeemYieldFromMoon(_mErc20Pool);
+        emit RedeemYieldFromAave(_aaveLPool, withdrawAmount);
     }
 
     /**
