@@ -34,8 +34,8 @@ describe("SHFactory test suite", function () {
       strikePrice4: 0,
       tr1: 11750,
       tr2: 10040,
-      issuanceDate: 1678406400,
-      maturityDate: 1681084800,
+      issuanceDate: 1681592118,
+      maturityDate: 1684184118,
       apy: "7-15%",
       uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
     }

@@ -17,7 +17,7 @@ describe("SHNFT test suite", function () {
         await shNFT.deployed();
     });
 
-    it("Returrns current token ID", async() => {
+    it("Returns current token ID", async() => {
         expect(await shNFT.currentTokenID()).to.equal(0);
     });
 

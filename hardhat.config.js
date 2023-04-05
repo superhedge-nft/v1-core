@@ -14,13 +14,6 @@ module.exports = {
     },
   },
   networks: {
-    hardhat: {
-      chainId: 31337,
-      forking: {
-        enabled: true,
-        url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_ARBITRUM_MAINNET}`
-      }
-    },
     arbitrumGoerli: {
       url: `https://arb-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_ARBITRUM_GOERLI}`,
       chainId: 421613,
