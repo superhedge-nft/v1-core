@@ -5,7 +5,7 @@ const { parseUnits } = ethers.utils;
 
 describe("SHFactory test suite", function () {
   let shFactory, shProduct, shNFT, mockUSDC;
-  let owner, qredoWallet
+  let owner, qredoWallet;
   before(async () => {
     [owner, qredoWallet, user1, user2] = await ethers.getSigners();
 
