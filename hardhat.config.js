@@ -18,8 +18,7 @@ module.exports = {
       chainId: 1337,
       forking: {
         enabled: true,
-        url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_ARBITRUM_MAINNET}`,
-        blockNumber: 77763335
+        url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_ARBITRUM_MAINNET}`
       }
     },
     arbitrumGoerli: {

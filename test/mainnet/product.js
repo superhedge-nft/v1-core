@@ -5,15 +5,15 @@ const { parseEther, parseUnits } = ethers.utils;
 
 describe("SHFactory test suite", function () {
     let shFactory, shProduct, shNFT, usdc;
-    let mUSDC; // Moonwell mUSDC contract
+    let aaveLPool; // Aave v3 lending contract
     let owner, user1, user2, whaleSigner;
 
-    const whaleAddress = "0x62F3ef881A51184c5E21Ea195aA9fFbB3e55f078";
-    const qredoWallet = "0xebC37b9cb1657C50676526d28fFfFd54B0A06be2";
-    const USDC = "0x931715FEE2d06333043d11F658C8CE934aC61D0c"; // Moonbeam Wormhole USDC
+    const whaleAddress = "0x62383739D68Dd0F844103Db8dFb05a7EdED5BBE6";
+    const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A";
+    const USDC = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"; // Moonbeam Wormhole USDC
 
-    // Moonwell Artemis USDC.wh address
-    const mUSDCAddr = "0x744b1756e7651c6D57f5311767EAFE5E931D615b";
+    // Aave lending pool address
+    const aaveLPoolAddr = "0x794a61358D6845594F94dc1DB02A252b5b4814aD";
 
     before(async () => {
         [owner, user1, user2] = await ethers.getSigners();
@@ -30,9 +30,9 @@ describe("SHFactory test suite", function () {
     
         usdc = await ethers.getContractAt("IERC20", USDC);
         
-        mUSDC = await ethers.getContractAt(
-            "IMErc20",
-            mUSDCAddr
+        aaveLPool = await ethers.getContractAt(
+            "IPool",
+            aaveLPoolAddr
         );
 
         // unlock accounts
@@ -64,9 +64,9 @@ describe("SHFactory test suite", function () {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1678470827,
-            maturityDate: 1681149227,
-            apy: "7-15%",
+            issuanceDate: 1681516800,
+            maturityDate: 1684108800,
+            apy: "8-13%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }
 
@@ -184,18 +184,18 @@ describe("SHFactory test suite", function () {
     });
 
     describe("Distribute assets & check coupon balance", () => {
-        it("Distribute with Moonwell", async() => {
+        it("Distribute with Aave V3", async() => {
             const optionRate = 20;
             const yieldRate = 80;
 
             expect(
-                await shProduct.distributeWithMoon(yieldRate, mUSDCAddr)
-            ).to.emit(shProduct, "DistributeWithMoon")
-            .withArgs(qredoWallet, optionRate, mUSDCAddr, yieldRate);
+                await shProduct.distributeWithAave(yieldRate, aaveLPoolAddr)
+            ).to.emit(shProduct, "DistributeWithAave")
+            .withArgs(qredoWallet, optionRate, aaveLPoolAddr, yieldRate);
             
             expect(await shProduct.isDistributed()).to.equal(true);
 
-            console.log(await mUSDC.balanceOf(shProduct.address));
+            console.log(await usdc.balanceOf(shProduct.address));
         });
         
         it("Check coupon balance", async () => {
@@ -283,8 +283,8 @@ describe("SHFactory test suite", function () {
         });
 
         it("Update issuance & maturity dates", async() => {
-            const issuanceDate = 1678470827;
-            const maturityDate = 1681149227;
+            const issuanceDate = 1681516800;
+            const maturityDate = 1684108800;
 
             expect(
                 await shProduct.updateTimes(issuanceDate, maturityDate)
@@ -293,8 +293,8 @@ describe("SHFactory test suite", function () {
 
         it("Redeem yield from Moonwell", async() => {
             expect(
-                await shProduct.redeemYieldFromMoon(mUSDCAddr)
-            ).to.emit(shProduct, "RedeemYieldFromMoon").withArgs(mUSDCAddr);
+                await shProduct.redeemYieldFromAave(aaveLPoolAddr)
+            ).to.emit(shProduct, "RedeemYieldFromAave");
             expect(await shProduct.isDistributed()).to.equal(false);
         });
 
@@ -389,8 +389,8 @@ describe("SHFactory test suite", function () {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1678470827,
-            maturityDate: 1680019200,
+            issuanceDate: 1681516800,
+            maturityDate: 1684108800,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }

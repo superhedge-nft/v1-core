@@ -9,7 +9,7 @@ describe("SHMarketplace test suite", () => {
     let owner, qredoDeribit, feeRecipient;
 
     const platformFee = 5; // 0.5% of sales price
-    const wETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+    const wETH = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 
     before(async() => {
         [owner, qredoDeribit, feeRecipient, user1, user2] = await ethers.getSigners();
@@ -64,13 +64,13 @@ describe("SHMarketplace test suite", () => {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1679330460,
-            maturityDate: 1680298869,
+            issuanceDate: 1681516800,
+            maturityDate: 1684108800,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }
 
-        const qredoWallet = "0xebC37b9cb1657C50676526d28fFfFd54B0A06be2";
+        const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A";
 
         it("Product created", async() => {
             expect(await shFactory.createProduct(
@@ -118,7 +118,7 @@ describe("SHMarketplace test suite", () => {
 
             await shMarketplace.connect(owner).updateAddressRegistry(addressRegistry.address);
             currentTokenID = await shProduct.currentTokenId();
-            startingTime = Math.floor(Date.now() / 1000) + 1 * 24 * 3600;
+            startingTime = Math.floor(Date.now() / 1000) + 300; // delta 5 mins
         });
 
         it("Reverts unless the users hold enough nfts", async() => {
@@ -251,7 +251,7 @@ describe("SHMarketplace test suite", () => {
             currentTokenID = await shProduct.currentTokenId();
 
             // USDC/USD aggregator
-            const usdcOracle = "0xA122591F60115D63421f66F752EF9f6e0bc73abC";
+            const usdcOracle = "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3";
             // set USDC/USD price oracle
             await priceFeed.registerOracle(mockUSDC.address, usdcOracle);
         });
@@ -290,7 +290,7 @@ describe("SHMarketplace test suite", () => {
             const unitPrice = await shMarketplace.getPrice(mockUSDC.address);
             
             let listing1 = await shMarketplace.listings(listingId1);
-
+            
             expect(
                 await shMarketplace.connect(user2).buyItem(
                     listingId1,
