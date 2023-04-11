@@ -7,12 +7,12 @@
 const { ethers, upgrades } = require("hardhat");
 
 async function main() {
-    const factoryAddr = "0x12129Aaf6a9B067C9AD7e34117C9b7723E04c541";
+    const factoryAddr = "0x7CfDE50B62fDA64Ea64784cA2244D0f956C12264";
     const shFactory = await ethers.getContractAt("SHFactory", factoryAddr);
 
     const nftAddr = "0x810F98442c3349553031d70F8E510841104bd857";
 
-    const usdc = "0x3799D95Ee109129951c6b31535b2B5AA6dbF108c";
+    const usdc = "0x72A9c57cD5E2Ff20450e409cF6A542f1E6c710fc";
 
     const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
     const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; // Qredo Metamask Institutional
@@ -27,8 +27,8 @@ async function main() {
         strikePrice4: 0,
         tr1: 10850,
         tr2: 11240,
-        issuanceDate: 1680032893,
-        maturityDate: 1682711293,
+        issuanceDate: 1682592118,
+        maturityDate: 1685184118,
         apy: "8-13%",
         uri: "https://gateway.pinata.cloud/ipfs/QmfXCbDZMpNhPLxxNHuxp7LESMadb9sd3Qkt33Bd9pYJBm"
     }

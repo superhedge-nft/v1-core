@@ -15,7 +15,7 @@ async function main() {
     console.log(`AddressRegistry deployed at ${addressRegistry.address}`);
 
     // Deploy PriceFeed contract
-    const wETH = "0xD909178CC99d318e4D46e7E66a972955859670E1";
+    const wETH = "0xe39Ab88f8A4777030A534146A9Ca3B52bd5D43A3";
     const PriceFeed = await ethers.getContractFactory("PriceFeed");
     const priceFeed = await upgrades.deployProxy(PriceFeed, [
         addressRegistry.address, wETH
@@ -47,6 +47,16 @@ async function main() {
     await addressRegistry.updateTokenRegistry(tokenRegistry.address);
 
     await addressRegistry.updatePriceFeed(priceFeed.address);
+
+    const paymentToken = "0x72A9c57cD5E2Ff20450e409cF6A542f1E6c710fc";
+    await tokenRegistry.add(paymentToken);
+
+    const usdcUsdOracle = "0x1692Bdd32F31b831caAc1b0c9fAF68613682813b";
+    await priceFeed.registerOracle(paymentToken, usdcUsdOracle);
+
+    await tokenRegistry.add(wETH);
+    const ethUsdOracle = "0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08";
+    await priceFeed.registerOracle(wETH, ethUsdOracle);
 
     await shMarketplace.updateAddressRegistry(addressRegistry.address);
 }

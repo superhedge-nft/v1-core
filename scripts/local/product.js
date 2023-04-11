@@ -6,7 +6,10 @@
 // global scope, and execute the script.
 const { ethers, upgrades } = require("hardhat");
 
+let owner, qredoWallet, manager;
+
 async function main() {
+  [owner, qredoWallet, manager] = await ethers.getSigners();
   // Deploy factory contract
   const SHFactory = await ethers.getContractFactory("SHFactory");
   const shFactory = await upgrades.deployProxy(SHFactory, []);
@@ -31,32 +34,37 @@ async function main() {
   console.log(`MockUSDC deployed at ${mockUSDC.address}`);
 
   // Create new product
-  const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
-  const qredoWallet = "0xBA6Aa0Ad8c3ADa57046920135bD323d02dF7E6Ef";
+
+  const productName = "ETH Bullish Spread";
 
   const issuanceCycle = {
-      coupon: 10,
-      strikePrice1: 25000,
-      strikePrice2: 20000,
-      strikePrice3: 0,
-      strikePrice4: 0,
-      uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
+    coupon: 10,
+    strikePrice1: 1400,
+    strikePrice2: 1600,
+    strikePrice3: 0,
+    strikePrice4: 0,
+    tr1: 11750,
+    tr2: 10040,
+    issuanceDate: 1681592118,
+    maturityDate: 1684184118,
+    apy: "7-15%",
+    uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
   }
 
   const tx = await shFactory.createProduct(
-    "BTC Defensive Spread", // product name
-    "BTC/USD", // underlying
-    mockUSDC.address, // mock USDC address
-    manager,
-    shNFT.address, // ERC1155 NFT address
-    qredoWallet, // QREDO Wallet
-    1000000, // Max capacity
-    issuanceCycle // First issuance cycle
+    productName,
+    "ETH/USDC",
+    mockUSDC.address,
+    owner.address,
+    shNFT.address,
+    qredoWallet.address,
+    10000,
+    issuanceCycle
   );
   
   await tx.wait();
   
-  const productAddr = await shFactory.getProduct("BTC Defensive Spread");
+  const productAddr = await shFactory.getProduct(productName);
 
   console.log(`SHProduct deployed at ${productAddr}`);
 }

@@ -14,11 +14,6 @@ async function main() {
 
     console.log(`SHFactory deployed at ${shFactory.address}`);
 
-    /* const factoryAddr = "0xa8B68a1e2400Fe67984A2d4197a063c56b0d0771";
-    const SHFactory = await ethers.getContractFactory("SHFactory");
-    const shFactory = await upgrades.upgradeProxy(factoryAddr, SHFactory);
-    console.log("SHFactory upgraded"); */
-
     // Deploy NFT contract
     const SHNFT = await ethers.getContractFactory("SHNFT");
     const shNFT = await upgrades.deployProxy(SHNFT, [
@@ -28,15 +23,13 @@ async function main() {
 
     console.log(`SHNFT deployed at ${shNFT.address}`);
 
-    /* const nftAddr = "0x17638b30e5d8440CdBFbFF7609D2a1493CD9cb73";
-    const SHNFT = await ethers.getContractFactory("SHNFT");
-    const shNFT = await upgrades.upgradeProxy(nftAddr, SHNFT);
-    console.log("SHNFT upgraded"); */
-
-    const usdc = "0x3799D95Ee109129951c6b31535b2B5AA6dbF108c";
+    // Arbitrum Goerli USDC
+    const usdc = "0x72A9c57cD5E2Ff20450e409cF6A542f1E6c710fc";
 
     const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
-    const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; // Qredo Metamask Institutional
+
+    // Qredo Metamask Institutional
+    const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A";
 
     const productName = "ETH Bullish Spread"
     const issuanceCycle = {
@@ -45,11 +38,11 @@ async function main() {
         strikePrice2: 1600,
         strikePrice3: 0,
         strikePrice4: 0,
-        tr1: 11750,
-        tr2: 10040,
-        issuanceDate: 1678665600,
-        maturityDate: 1681344000,
-        apy: "7-15%",
+        tr1: 11850,
+        tr2: 10240,
+        issuanceDate: 1681592118,
+        maturityDate: 1684184118,
+        apy: "9-13%",
         uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
     }
 
@@ -61,7 +54,7 @@ async function main() {
         manager,
         shNFT.address, // ERC1155 NFT address
         qredoWallet, // QREDO Wallet
-        10000, // Max capacity
+        5000, // Max capacity
         issuanceCycle // First issuance cycle
     );
   
