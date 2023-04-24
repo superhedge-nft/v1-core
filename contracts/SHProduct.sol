@@ -156,10 +156,14 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     event UpdateAPY(
         string _apy
     );
-
+    
     event UpdateTimes(
         uint256 _issuanceDate,
         uint256 _maturityDate
+    );
+
+    event UpdateName(
+        string _name
     );
 
     function initialize(
@@ -237,17 +241,24 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     }
 
     /**
-     * @notice Sets dedicated msg.sender to restrict access to the functions that Gelato will call
+     * @notice Sets a relayer of automation service like Openzeppelin Defender.
      */
     function setDedicatedMsgSender(address _sender) external onlyManager {
         dedicatedMsgSender = _sender;
     }
 
     /**
-     * @notice Whitelists the additional callers for the functions that Gelato will call
+     * @notice Whitelists the additional accounts to call the automation functions.
      */
     function whitelist(address _account) external onlyManager {
         whitelisted[_account] = true;
+    }
+
+    /**
+     * @notice Remove the additional callers from whitelist.
+     */
+    function removeFromWhitelist(address _account) external onlyManager {
+        delete whitelisted[_account];
     }
 
     function fundAccept() external whenNotPaused onlyWhitelisted {
@@ -451,6 +462,15 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         issuanceCycle.maturityDate = _maturityDate;
 
         emit UpdateTimes(_issuanceDate, _maturityDate);
+    }
+
+    /**
+     * @dev Update product name
+     */
+    function updateName(string memory _name) external onlyManager {
+        name = _name;
+
+        emit UpdateName(_name);
     }
 
     /**
