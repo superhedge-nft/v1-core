@@ -42,9 +42,8 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     IERC20Upgradeable public currency;
     bool public isDistributed;
 
-    /// @notice restricting access to the gelato automation functions
+    /// @notice restricting access to the automation functions
     mapping(address => bool) public whitelisted;
-    address public dedicatedMsgSender;
     
     event Deposit(
         address indexed _from,
@@ -161,6 +160,10 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _maturityDate
     );
 
+    event UpdateName(
+        string _name
+    );
+
     function initialize(
         string memory _name,
         string memory _underlying,
@@ -196,10 +199,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     }
     
     modifier onlyWhitelisted() {
-        require(
-            whitelisted[msg.sender] || msg.sender == dedicatedMsgSender,
-            "Only whitelisted"
-        );
+        require(whitelisted[msg.sender], "Only whitelisted");
         _;
     }
 
@@ -236,17 +236,26 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     }
 
     /**
-     * @notice Sets dedicated msg.sender to restrict access to the functions that Gelato will call
+     * @notice Update product name
      */
-    function setDedicatedMsgSender(address _sender) external onlyManager {
-        dedicatedMsgSender = _sender;
+    function updateName(string memory _name) external onlyManager {
+        name = _name;
+
+        emit UpdateName(_name);
     }
 
     /**
-     * @notice Whitelists the additional callers for the functions that Gelato will call
+     * @notice Whitelists the relayers and additional callers for the functions that OZ defender will call
      */
     function whitelist(address _account) external onlyManager {
         whitelisted[_account] = true;
+    }
+
+    /**
+     * @notice Remove the relayers and additional callers from whitelist.
+     */
+    function removeFromWhitelist(address _account) external onlyManager {
+        delete whitelisted[_account];
     }
 
     function fundAccept() external whenNotPaused onlyWhitelisted {
