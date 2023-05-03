@@ -14,7 +14,7 @@ async function main() {
 
     console.log(`SHFactory deployed at ${shFactory.address}`);
 
-    /* const factoryAddr = "0xa8B68a1e2400Fe67984A2d4197a063c56b0d0771";
+    /* const factoryAddr = "0x12129Aaf6a9B067C9AD7e34117C9b7723E04c541";
     const SHFactory = await ethers.getContractFactory("SHFactory");
     const shFactory = await upgrades.upgradeProxy(factoryAddr, SHFactory);
     console.log("SHFactory upgraded"); */
@@ -32,48 +32,9 @@ async function main() {
     const SHNFT = await ethers.getContractFactory("SHNFT");
     const shNFT = await upgrades.upgradeProxy(nftAddr, SHNFT);
     console.log("SHNFT upgraded"); */
-
-    const usdc = "0x3799D95Ee109129951c6b31535b2B5AA6dbF108c";
-
-    const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
-    const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; // Qredo Metamask Institutional
-
-    const productName = "ETH Bullish Spread"
-    const issuanceCycle = {
-        coupon: 10,
-        strikePrice1: 1400,
-        strikePrice2: 1600,
-        strikePrice3: 0,
-        strikePrice4: 0,
-        tr1: 11750,
-        tr2: 10040,
-        issuanceDate: 1678665600,
-        maturityDate: 1681344000,
-        apy: "7-15%",
-        uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
-    }
-
-    // Create new product
-    const tx = await shFactory.createProduct(
-        productName, // product name
-        "ETH/USDC", // underlying
-        usdc, // USDC address on Goerli testnet
-        manager,
-        shNFT.address, // ERC1155 NFT address
-        qredoWallet, // QREDO Wallet
-        10000, // Max capacity
-        issuanceCycle // First issuance cycle
-    );
-  
-    await tx.wait();
-  
-    const productAddr = await shFactory.getProduct(productName);
-
-    console.log(`SHProduct deployed at ${productAddr}`);
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
+
 main().catch((error) => {
     console.error(error);
     process.exitCode = 1;

@@ -7,36 +7,37 @@
 const { ethers, upgrades } = require("hardhat");
 
 async function main() {
-    const factoryAddr = "0x12129Aaf6a9B067C9AD7e34117C9b7723E04c541";
+    const factoryAddr = "0x4562b4A667BabA8EE3f2BcdED65ff916556C383E";
     const shFactory = await ethers.getContractAt("SHFactory", factoryAddr);
 
-    const nftAddr = "0x810F98442c3349553031d70F8E510841104bd857";
+    const nftAddr = "0x539890cB8E365495908E844e42ee36E0e6b354B4";
 
     const usdc = "0x3799D95Ee109129951c6b31535b2B5AA6dbF108c";
 
     const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
-    const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; // Qredo Metamask Institutional
+    // Qredo Metamask Institutional
+    const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A";
 
-    const productName = "BTC Bearish Spread"
+    const productName = "ETH Bullish Spread";
 
     const issuanceCycle = {
-        coupon: 20,
-        strikePrice1: 28000,
-        strikePrice2: 26000,
+        coupon: 10,
+        strikePrice1: 1400,
+        strikePrice2: 1600,
         strikePrice3: 0,
         strikePrice4: 0,
-        tr1: 10850,
-        tr2: 11240,
-        issuanceDate: 1680032893,
-        maturityDate: 1682711293,
-        apy: "8-13%",
-        uri: "https://gateway.pinata.cloud/ipfs/QmfXCbDZMpNhPLxxNHuxp7LESMadb9sd3Qkt33Bd9pYJBm"
+        tr1: 11750,
+        tr2: 10040,
+        issuanceDate: 1683244800,
+        maturityDate: 1685404800,
+        apy: "7-15%",
+        uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
     }
 
     // Create new product
     const tx = await shFactory.createProduct(
         productName, // product name
-        "BTC/USDC", // underlying
+        "ETH/USDC", // underlying
         usdc, // USDC address on Goerli testnet
         manager,
         nftAddr, // ERC1155 NFT address
