@@ -64,7 +64,7 @@ describe("SHMarketplace test suite", () => {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1678484469,
+            issuanceDate: 1679330460,
             maturityDate: 1680298869,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
@@ -251,7 +251,7 @@ describe("SHMarketplace test suite", () => {
             currentTokenID = await shProduct.currentTokenId();
 
             // USDC/USD aggregator
-            const usdcOracle = "0x8fffffd4afb6115b954bd326cbe7b4ba576818f6";
+            const usdcOracle = "0xA122591F60115D63421f66F752EF9f6e0bc73abC";
             // set USDC/USD price oracle
             await priceFeed.registerOracle(mockUSDC.address, usdcOracle);
         });

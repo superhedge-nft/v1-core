@@ -33,7 +33,7 @@ async function main() {
     const shNFT = await upgrades.upgradeProxy(nftAddr, SHNFT);
     console.log("SHNFT upgraded"); */
 
-    const usdc = "0x07865c6E87B9F70255377e024ace6630C1Eaa37F";
+    const usdc = "0x3799D95Ee109129951c6b31535b2B5AA6dbF108c";
 
     const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
     const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; // Qredo Metamask Institutional
@@ -47,8 +47,8 @@ async function main() {
         strikePrice4: 0,
         tr1: 11750,
         tr2: 10040,
-        issuanceDate: 1675958400,
-        maturityDate: 1676131200,
+        issuanceDate: 1678665600,
+        maturityDate: 1681344000,
         apy: "7-15%",
         uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
     }

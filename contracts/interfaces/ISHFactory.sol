@@ -11,7 +11,7 @@ interface ISHFactory {
         IERC20Upgradeable _currency,
         address _manager,
         address _shNFT,
-        address _qredo_deribit,
+        address _qredoWallet,
         uint256 _maxCapacity,
         DataTypes.IssuanceCycle memory _issuanceCycle        
     ) external;

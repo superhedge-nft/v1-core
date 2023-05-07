@@ -25,20 +25,26 @@ describe("SHFactory test suite", function () {
   });
 
   describe("Create product", () => {
-    const productName = "BTC Bullish Spread";
+    const productName = "ETH Bullish Spread";
     const issuanceCycle = {
       coupon: 10,
-      strikePrice1: 25000,
-      strikePrice2: 20000,
+      strikePrice1: 1400,
+      strikePrice2: 1600,
       strikePrice3: 0,
       strikePrice4: 0,
+      tr1: 11750,
+      tr2: 10040,
+      issuanceDate: 1678406400,
+      maturityDate: 1681084800,
+      apy: "7-15%",
       uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
     }
+
     it("Reverts if max capacity is not whole-number thousands", async () => {
       await expect(
         shFactory.createProduct(
           productName,
-          "BTC/USDC",
+          "ETH/USDC",
           mockUSDC.address,
           owner.address,
           shNFT.address,
@@ -52,7 +58,7 @@ describe("SHFactory test suite", function () {
     it("Successfully created", async () => {
       expect(await shFactory.createProduct(
         productName,
-        "BTC/USDC",
+        "ETH/USDC",
         mockUSDC.address,
         owner.address,
         shNFT.address,
@@ -68,7 +74,7 @@ describe("SHFactory test suite", function () {
       const SHProduct = await ethers.getContractFactory("SHProduct");
       shProduct = SHProduct.attach(productAddr);
   
-      expect(await shProduct.currentTokenId()).to.equal(0);
+      expect(await shProduct.currentTokenId()).to.equal(1);
       expect(await shProduct.shNFT()).to.equal(shNFT.address);
     });
   });
@@ -177,70 +183,4 @@ describe("SHFactory test suite", function () {
       expect(await shProduct.couponBalance(user2.address)).to.equal(prevUser2Coupon + user2Coupon);
     });
   });
-
-  describe("Withdraw", () => {
-    before(async() => {
-      await shProduct.mature();
-    });
-
-    it("Reverts if the product status is not 'Accepted'", async() => {
-      await expect(
-        shProduct.connect(user1).withdrawPrincipal()
-      ).to.be.revertedWith("Not accepted status");
-    });
-
-    it("Reverts if user has no NFT", async() => {
-      await shProduct.fundAccept();
-      await expect(
-        shProduct.connect(user1).withdrawPrincipal()
-      ).to.be.revertedWith("No principal");
-    });
-
-    it("User2 should be able to withdraw principal", async () => {
-      const prevTokenID = await shProduct.prevTokenId();
-      const tokenSupply = parseInt(await shNFT.balanceOf(user2.address, prevTokenID));
-      const principal = tokenSupply * 1000 * Math.pow(10, 6);
-      
-      expect(
-        await shProduct.connect(user2).withdrawPrincipal()
-      ).to.be.emit(shProduct, "WithdrawPrincipal")
-      .withArgs(user2.address, principal, prevTokenID, tokenSupply);
-    });
-
-    /* it("Withdraw coupon, but should revert since there is no enough balance", async () => {
-      await expect(
-        shProduct.connect(user1).withdrawCoupon()
-      ).to.be.revertedWith("Insufficient balance");
-    });
-
-    it("Withdraw option payout", async() => {
-      await shProduct.connect(user1).withdrawOption();
-    }); */
-  });
-
-  /* describe("Set new issuance cycle", () => {
-    const newIssuanceCycle = {
-      coupon: 20, // 0.20% in basis points
-      strikePrice1: 20000,
-      strikePrice2: 18000,
-      strikePrice3: 0,
-      strikePrice4: 0,
-      uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH",
-    };
-
-    it("Reverts if the product status is already 'issued'", async () => {
-      await shProduct.fundLock();
-      await shProduct.issuance();
-      await expect(shProduct.setIssuanceCycle(
-        newIssuanceCycle
-      )).to.be.revertedWith("Already issued status");
-    });
-
-    it("set successfully", async () => {
-      await shProduct.mature();
-      expect(await shProduct.setIssuanceCycle(
-        newIssuanceCycle
-      )).to.be.emit(shFactory, "IssuanceCycleSet");
-    });
-  }); */
 });

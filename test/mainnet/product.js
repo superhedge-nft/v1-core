@@ -5,17 +5,15 @@ const { parseEther, parseUnits } = ethers.utils;
 
 describe("SHFactory test suite", function () {
     let shFactory, shProduct, shNFT, usdc;
-    let aurosPool; // Clearpool contracts
-    let cUSDC; // Compound cUSDC contract
+    let mUSDC; // Moonwell mUSDC contract
     let owner, user1, user2, whaleSigner;
 
-    const whaleAddress = "0xDa9CE944a37d218c3302F6B82a094844C6ECEb17";
+    const whaleAddress = "0x62F3ef881A51184c5E21Ea195aA9fFbB3e55f078";
     const qredoWallet = "0xebC37b9cb1657C50676526d28fFfFd54B0A06be2";
-    const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+    const USDC = "0x931715FEE2d06333043d11F658C8CE934aC61D0c"; // Moonbeam Wormhole USDC
 
-    // Clearpools
-    const aurosPoolAddr = "0x3aeB3a8F0851249682A6a836525CDEeE5aA2A153";
-    const cUSDCAddr = "0x39AA39c021dfbaE8faC545936693aC917d5E7563";
+    // Moonwell Artemis USDC.wh address
+    const mUSDCAddr = "0x744b1756e7651c6D57f5311767EAFE5E931D615b";
 
     before(async () => {
         [owner, user1, user2] = await ethers.getSigners();
@@ -31,22 +29,17 @@ describe("SHFactory test suite", function () {
         await shNFT.deployed();
     
         usdc = await ethers.getContractAt("IERC20", USDC);
-
-        aurosPool = await ethers.getContractAt(
-            "IPoolMaster",
-            aurosPoolAddr
-        );
         
-        cUSDC = await ethers.getContractAt(
-            "ICErc20",
-            cUSDCAddr
+        mUSDC = await ethers.getContractAt(
+            "IMErc20",
+            mUSDCAddr
         );
 
         // unlock accounts
         await network.provider.send("hardhat_impersonateAccount", [whaleAddress]);
         await network.provider.send("hardhat_impersonateAccount", [qredoWallet]);
 
-        // send enough ETH
+        // send enough GLMR
         await owner.sendTransaction({
             to: whaleAddress,
             value: parseEther("5")
@@ -71,8 +64,8 @@ describe("SHFactory test suite", function () {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1677600000,
-            maturityDate: 1680019200,
+            issuanceDate: 1678470827,
+            maturityDate: 1681149227,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }
@@ -191,16 +184,18 @@ describe("SHFactory test suite", function () {
     });
 
     describe("Distribute assets & check coupon balance", () => {
-        it("Distribute with Compound", async() => {
+        it("Distribute with Moonwell", async() => {
             const optionRate = 20;
             const yieldRate = 80;
 
             expect(
-                await shProduct.distributeWithComp(yieldRate, cUSDCAddr)
-            ).to.emit(shProduct, "DistributeWithComp")
-            .withArgs(qredoWallet, optionRate, cUSDCAddr, yieldRate);
+                await shProduct.distributeWithMoon(yieldRate, mUSDCAddr)
+            ).to.emit(shProduct, "DistributeWithMoon")
+            .withArgs(qredoWallet, optionRate, mUSDCAddr, yieldRate);
             
             expect(await shProduct.isDistributed()).to.equal(true);
+
+            console.log(await mUSDC.balanceOf(shProduct.address));
         });
         
         it("Check coupon balance", async () => {
@@ -288,18 +283,18 @@ describe("SHFactory test suite", function () {
         });
 
         it("Update issuance & maturity dates", async() => {
-            const issuanceDate = 1677600000;
-            const maturityDate = 1680019200;
+            const issuanceDate = 1678470827;
+            const maturityDate = 1681149227;
 
             expect(
                 await shProduct.updateTimes(issuanceDate, maturityDate)
             ).to.emit(shProduct, "UpdateTimes").withArgs(issuanceDate, maturityDate);
         });
 
-        it("Redeem yield from Compound", async() => {
+        it("Redeem yield from Moonwell", async() => {
             expect(
-                await shProduct.redeemYieldFromComp(cUSDCAddr)
-            ).to.emit(shProduct, "RedeemYieldFromComp").withArgs(cUSDCAddr);
+                await shProduct.redeemYieldFromMoon(mUSDCAddr)
+            ).to.emit(shProduct, "RedeemYieldFromMoon").withArgs(mUSDCAddr);
             expect(await shProduct.isDistributed()).to.equal(false);
         });
 
@@ -394,7 +389,7 @@ describe("SHFactory test suite", function () {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1677600000,
+            issuanceDate: 1678470827,
             maturityDate: 1680019200,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
