@@ -5,15 +5,17 @@ const { parseEther, parseUnits } = ethers.utils;
 
 describe("SHFactory test suite", function () {
     let shFactory, shProduct, shNFT, usdc;
-    let mUSDC; // Moonwell mUSDC contract
+    let aurosPool; // Clearpool contracts
+    let cUSDC; // Compound cUSDC contract
     let owner, user1, user2, whaleSigner;
 
-    const whaleAddress = "0x62F3ef881A51184c5E21Ea195aA9fFbB3e55f078";
+    const whaleAddress = "0xDa9CE944a37d218c3302F6B82a094844C6ECEb17";
     const qredoWallet = "0xebC37b9cb1657C50676526d28fFfFd54B0A06be2";
-    const USDC = "0x931715FEE2d06333043d11F658C8CE934aC61D0c"; // Moonbeam Wormhole USDC
+    const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 
-    // Moonwell Artemis USDC.wh address
-    const mUSDCAddr = "0x744b1756e7651c6D57f5311767EAFE5E931D615b";
+    // Clearpools
+    const aurosPoolAddr = "0x3aeB3a8F0851249682A6a836525CDEeE5aA2A153";
+    const cUSDCAddr = "0x39AA39c021dfbaE8faC545936693aC917d5E7563";
 
     before(async () => {
         [owner, user1, user2] = await ethers.getSigners();
@@ -29,17 +31,22 @@ describe("SHFactory test suite", function () {
         await shNFT.deployed();
     
         usdc = await ethers.getContractAt("IERC20", USDC);
+
+        aurosPool = await ethers.getContractAt(
+            "IPoolMaster",
+            aurosPoolAddr
+        );
         
-        mUSDC = await ethers.getContractAt(
-            "IMErc20",
-            mUSDCAddr
+        cUSDC = await ethers.getContractAt(
+            "ICErc20",
+            cUSDCAddr
         );
 
         // unlock accounts
         await network.provider.send("hardhat_impersonateAccount", [whaleAddress]);
         await network.provider.send("hardhat_impersonateAccount", [qredoWallet]);
 
-        // send enough GLMR
+        // send enough ETH
         await owner.sendTransaction({
             to: whaleAddress,
             value: parseEther("5")
@@ -64,8 +71,8 @@ describe("SHFactory test suite", function () {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1678470827,
-            maturityDate: 1681149227,
+            issuanceDate: Math.floor(Date.now() / 1000) + 7 * 86400,
+            maturityDate: Math.floor(Date.now() / 1000) + 30 * 86400,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }
@@ -106,6 +113,13 @@ describe("SHFactory test suite", function () {
         
             expect(await shProduct.currentTokenId()).to.equal(1);
             expect(await shProduct.shNFT()).to.equal(shNFT.address);
+        });
+
+        it("Update product name", async() => {
+            await expect(shProduct.updateName(productName)).to.be.revertedWith("Product already exists");
+            const newName = "ETH Bullish Spread1";
+            expect(shProduct.updateName(newName)).to.emit(shProduct, "UpdateName").withArgs(newName);
+            expect(await shProduct.name()).to.equal(newName);
         });
     });
 
@@ -167,9 +181,10 @@ describe("SHFactory test suite", function () {
             const tokenId = await shProduct.currentTokenId();
             const URI = "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH";
             await shNFT.setTokenURI(tokenId, URI);
-            console.log(tokenId);
+            
             // Update URI during fund lock
             await shProduct.fundLock();
+
             expect(
                 await shProduct.updateURI(URI)
             ).to.emit(shProduct, "UpdateURI").withArgs(tokenId, URI);
@@ -184,18 +199,16 @@ describe("SHFactory test suite", function () {
     });
 
     describe("Distribute assets & check coupon balance", () => {
-        it("Distribute with Moonwell", async() => {
+        it("Distribute with Compound", async() => {
             const optionRate = 20;
             const yieldRate = 80;
 
             expect(
-                await shProduct.distributeWithMoon(yieldRate, mUSDCAddr)
-            ).to.emit(shProduct, "DistributeWithMoon")
-            .withArgs(qredoWallet, optionRate, mUSDCAddr, yieldRate);
+                await shProduct.distributeWithComp(yieldRate, cUSDCAddr)
+            ).to.emit(shProduct, "DistributeWithComp")
+            .withArgs(qredoWallet, optionRate, cUSDCAddr, yieldRate);
             
             expect(await shProduct.isDistributed()).to.equal(true);
-
-            console.log(await mUSDC.balanceOf(shProduct.address));
         });
         
         it("Check coupon balance", async () => {
@@ -283,18 +296,18 @@ describe("SHFactory test suite", function () {
         });
 
         it("Update issuance & maturity dates", async() => {
-            const issuanceDate = 1678470827;
-            const maturityDate = 1681149227;
+            const issuanceDate = Math.floor(Date.now() / 1000) + 2 * 7 * 86400;
+            const maturityDate = Math.floor(Date.now() / 1000) + 6 * 7 * 86400;
 
             expect(
                 await shProduct.updateTimes(issuanceDate, maturityDate)
             ).to.emit(shProduct, "UpdateTimes").withArgs(issuanceDate, maturityDate);
         });
 
-        it("Redeem yield from Moonwell", async() => {
+        it("Redeem yield from Compound", async() => {
             expect(
-                await shProduct.redeemYieldFromMoon(mUSDCAddr)
-            ).to.emit(shProduct, "RedeemYieldFromMoon").withArgs(mUSDCAddr);
+                await shProduct.redeemYieldFromComp(cUSDCAddr)
+            ).to.emit(shProduct, "RedeemYieldFromComp").withArgs(cUSDCAddr);
             expect(await shProduct.isDistributed()).to.equal(false);
         });
 
@@ -333,7 +346,7 @@ describe("SHFactory test suite", function () {
             console.log(user2Info.optionPayout); */
         });
 
-        /* it("Withdraws their funds", async() => {
+        it("Withdraws their funds", async() => {
             await expect(
                 shProduct.connect(user1).withdrawPrincipal()
             ).to.be.revertedWith("No principal");
@@ -356,17 +369,17 @@ describe("SHFactory test suite", function () {
             );
 
             console.log(await usdc.balanceOf(user2.address));
-        }); */
+        });
         
         it("Update parameters after fund is locked", async() => {
             await shProduct.fundLock();
-            await shProduct.updateCoupon(20);
+            await shProduct.updateCoupon(10);
             await shProduct.updateStrikePrices(1300, 1500, 0, 0);
             await shProduct.updateURI("https://ipfs.filebase.io/ipfs/QmaXPe1yB864wN4jjFff645n78yzuGB2hMrNxQNvEX9f9a");
             await shProduct.updateTRs(11560, 10830);
             await shProduct.updateAPY("8-13%");
             await shProduct.updateParameters(
-                20, 1300, 1500, 0, 0, 11560, 10830, "8-12%", "https://ipfs.filebase.io/ipfs/QmaXPe1yB864wN4jjFff645n78yzuGB2hMrNxQNvEX9f9a"
+                10, 1300, 1500, 0, 0, 11560, 10830, "8-12%", "https://ipfs.filebase.io/ipfs/QmaXPe1yB864wN4jjFff645n78yzuGB2hMrNxQNvEX9f9a"
             );
         });
 
@@ -376,6 +389,11 @@ describe("SHFactory test suite", function () {
             await shProduct.issuance();
             const currentTokenID = await shProduct.currentTokenId();
             expect(await shNFT.balanceOf(user2.address, currentTokenID)).to.equal(prevSupply);
+        });
+
+        it("remove from whitelist", async() => {
+            await shProduct.removeFromWhitelist(owner.address);
+            expect(await shProduct.whitelisted(owner.address)).to.equal(false);
         });
     });
 
@@ -389,8 +407,8 @@ describe("SHFactory test suite", function () {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1678470827,
-            maturityDate: 1680019200,
+            issuanceDate: Math.floor(Date.now() / 1000) + 7 * 86400,
+            maturityDate: Math.floor(Date.now() / 1000) + 30 * 86400,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }
