@@ -15,23 +15,21 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      chainId: 31337,
+      chainId: 1337,
       forking: {
         enabled: true,
-        url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`
-        // url: `https://moonbeam.public.blastapi.io`
+        url: `https://rpc.ankr.com/eth`
       }
     },
-    moonbase: {
-      // url: `https://moonbase-alpha.blastapi.io/${process.env.BLAST_PROJECT_ID}`,
-      url: `https://rpc.api.moonbase.moonbeam.network`,
-      chainId: 1287, // (hex: 0x507),
+    goerli: {
+      url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_GOERLI}`,
+      chainId: 5,
       accounts: [process.env.PRIVATE_KEY],
-      gasPrice: 1000000000,
+      gasPrice: 80000000000
     },
-    moonbeam: {
-      url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`, // Insert your RPC URL here
-      chainId: 1284, // (hex: 0x504),
+    mainnet: {
+      url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_MAINNET}`,
+      chainId: 1,
       accounts: [process.env.PRIVATE_KEY]
     }
   },
@@ -40,6 +38,6 @@ module.exports = {
     currency: "USD",
   },
   etherscan: {
-    apiKey: process.env.MOONSCAN_API_KEY,
+    apiKey: process.env.ETHERSCAN_API_KEY,
   }
 };
