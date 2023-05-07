@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHNFT.sol";
+import "./interfaces/ISHFactory.sol";
 import "./interfaces/clearpool/IPoolMaster.sol";
 import "./interfaces/compound/ICErc20.sol";
 import "./libraries/DataTypes.sol";
@@ -26,6 +27,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
 
     address public manager;
     address public shNFT;
+    address public shFactory;
     address public qredoWallet;
 
     uint256 public maxCapacity;
@@ -198,7 +200,8 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
 
         currency = _currency;
         shNFT = _shNFT;
-
+        shFactory = msg.sender;
+        
         require(_issuanceCycle.issuanceDate > block.timestamp, 
             "Issuance date should be bigger than current timestamp");
         require(_issuanceCycle.maturityDate > _issuanceCycle.issuanceDate, 
@@ -251,6 +254,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
      * @notice Whitelists the relayers and additional callers for the functions that OZ defender will call
      */
     function whitelist(address _account) external onlyManager {
+        require(!whitelisted[_account], "Already whitelisted");
         whitelisted[_account] = true;
     }
 
@@ -340,6 +344,8 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
      * @notice Update product name
      */
     function updateName(string memory _name) external onlyManager {
+        address _product = ISHFactory(shFactory).getProduct(_name);
+        require(_product == address(0) || ISHProduct(_product).paused() == true, "Product already exists");
         name = _name;
 
         emit UpdateName(_name);
