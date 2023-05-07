@@ -35,12 +35,17 @@ async function main() {
   const qredoWallet = "0xBA6Aa0Ad8c3ADa57046920135bD323d02dF7E6Ef";
 
   const issuanceCycle = {
-      coupon: 10,
-      strikePrice1: 25000,
-      strikePrice2: 20000,
-      strikePrice3: 0,
-      strikePrice4: 0,
-      uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
+    coupon: 10,
+    strikePrice1: 1400,
+    strikePrice2: 1600,
+    strikePrice3: 0,
+    strikePrice4: 0,
+    tr1: 11750,
+    tr2: 10040,
+    issuanceDate: Math.floor(Date.now() / 1000) + 7 * 86400,
+    maturityDate: Math.floor(Date.now() / 1000) + 30 * 86400,
+    apy: "7-15%",
+    uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
   }
 
   const tx = await shFactory.createProduct(
