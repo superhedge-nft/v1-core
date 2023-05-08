@@ -64,8 +64,8 @@ describe("SHFactory test suite", function () {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1681516800,
-            maturityDate: 1684108800,
+            issuanceDate: Math.floor(Date.now() / 1000) + 7 * 86400,
+            maturityDate: Math.floor(Date.now() / 1000) + 30 * 86400,
             apy: "8-13%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }
@@ -189,8 +189,8 @@ describe("SHFactory test suite", function () {
             const yieldRate = 80;
 
             expect(
-                await shProduct.distributeWithAave(yieldRate, aaveLPoolAddr)
-            ).to.emit(shProduct, "DistributeWithAave")
+                await shProduct.distributeFunds(yieldRate, aaveLPoolAddr)
+            ).to.emit(shProduct, "DistributeFunds")
             .withArgs(qredoWallet, optionRate, aaveLPoolAddr, yieldRate);
             
             expect(await shProduct.isDistributed()).to.equal(true);
@@ -283,8 +283,8 @@ describe("SHFactory test suite", function () {
         });
 
         it("Update issuance & maturity dates", async() => {
-            const issuanceDate = 1681516800;
-            const maturityDate = 1684108800;
+            const issuanceDate = Math.floor(Date.now() / 1000) + 7 * 86400;
+            const maturityDate = Math.floor(Date.now() / 1000) + 30 * 86400;
 
             expect(
                 await shProduct.updateTimes(issuanceDate, maturityDate)
@@ -293,8 +293,8 @@ describe("SHFactory test suite", function () {
 
         it("Redeem yield from Moonwell", async() => {
             expect(
-                await shProduct.redeemYieldFromAave(aaveLPoolAddr)
-            ).to.emit(shProduct, "RedeemYieldFromAave");
+                await shProduct.redeemYield(aaveLPoolAddr)
+            ).to.emit(shProduct, "RedeemYield");
             expect(await shProduct.isDistributed()).to.equal(false);
         });
 
@@ -333,7 +333,7 @@ describe("SHFactory test suite", function () {
             console.log(user2Info.optionPayout); */
         });
 
-        /* it("Withdraws their funds", async() => {
+        it("Withdraws their funds", async() => {
             await expect(
                 shProduct.connect(user1).withdrawPrincipal()
             ).to.be.revertedWith("No principal");
@@ -356,7 +356,7 @@ describe("SHFactory test suite", function () {
             );
 
             console.log(await usdc.balanceOf(user2.address));
-        }); */
+        });
         
         it("Update parameters after fund is locked", async() => {
             await shProduct.fundLock();
@@ -389,8 +389,8 @@ describe("SHFactory test suite", function () {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1681516800,
-            maturityDate: 1684108800,
+            issuanceDate: Math.floor(Date.now() / 1000) + 7 * 86400,
+            maturityDate: Math.floor(Date.now() / 1000) + 30 * 86400,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }

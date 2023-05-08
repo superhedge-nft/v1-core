@@ -64,8 +64,8 @@ describe("SHMarketplace test suite", () => {
             strikePrice4: 0,
             tr1: 11750,
             tr2: 10040,
-            issuanceDate: 1681516800,
-            maturityDate: 1684108800,
+            issuanceDate: Math.floor(Date.now() / 1000) + 7 * 86400,
+            maturityDate: Math.floor(Date.now() / 1000) + 30 * 86400,
             apy: "7-15%",
             uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
         }
