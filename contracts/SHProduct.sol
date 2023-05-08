@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
+import "./interfaces/ISHFactory.sol";
 import "./interfaces/ISHNFT.sol";
 import "./interfaces/aave/IPool.sol";
 import "./libraries/DataTypes.sol";
@@ -25,6 +26,8 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
 
     address public manager;
     address public shNFT;
+    address public shFactory;
+
     address public qredoWallet;
 
     uint256 public maxCapacity;
@@ -42,9 +45,8 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     IERC20Upgradeable public currency;
     bool public isDistributed;
 
-    /// @notice restricting access to the gelato automation functions
+    /// @notice restricting access to the automation functions
     mapping(address => bool) public whitelisted;
-    address public dedicatedMsgSender;
     
     event Deposit(
         address indexed _from,
@@ -77,14 +79,14 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _amount
     );
 
-    event DistributeWithAave(
+    event DistributeFunds(
         address indexed _qredoDeribit,
         uint256 _optionRate,
         address indexed _aaveLPool,
         uint256 _yieldRate
     );
     
-    event RedeemYieldFromAave(
+    event RedeemYield(
         address _aaveLPool,
         uint256 _amount
     );
@@ -187,7 +189,9 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         maxCapacity = _maxCapacity;
 
         currency = _currency;
+
         shNFT = _shNFT;
+        shFactory = msg.sender;
 
         require(_issuanceCycle.issuanceDate > block.timestamp, 
             "Issuance date should be bigger than current timestamp");
@@ -201,10 +205,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     }
     
     modifier onlyWhitelisted() {
-        require(
-            whitelisted[msg.sender] || msg.sender == dedicatedMsgSender,
-            "Only whitelisted"
-        );
+        require(whitelisted[msg.sender], "Only whitelisted");
         _;
     }
 
@@ -241,16 +242,10 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     }
 
     /**
-     * @notice Sets a relayer of automation service like Openzeppelin Defender.
-     */
-    function setDedicatedMsgSender(address _sender) external onlyManager {
-        dedicatedMsgSender = _sender;
-    }
-
-    /**
      * @notice Whitelists the additional accounts to call the automation functions.
      */
     function whitelist(address _account) external onlyManager {
+        require(!whitelisted[_account], "Already whitelisted");
         whitelisted[_account] = true;
     }
 
@@ -468,6 +463,8 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
      * @dev Update product name
      */
     function updateName(string memory _name) external onlyManager {
+        address _product = ISHFactory(shFactory).getProduct(_name);
+        require(_product == address(0) || ISHProduct(_product).paused() == true, "Product: this name already exists");
         name = _name;
 
         emit UpdateName(_name);
@@ -559,7 +556,10 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         emit WithdrawOption(msg.sender, userInfo[msg.sender].optionPayout);
     }
 
-    function distributeWithAave(
+    /**
+     * @notice Distributes locked funds
+     */
+    function distributeFunds(
         uint256 _yieldRate,
         address _aaveLPool
     ) external onlyManager onlyLocked {
@@ -579,10 +579,14 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         IPool(_aaveLPool).supply(address(currency), yieldAmount, address(this), 0);
         isDistributed = true;
         
-        emit DistributeWithAave(qredoWallet, optionRate, _aaveLPool, _yieldRate);
+        emit DistributeFunds(qredoWallet, optionRate, _aaveLPool, _yieldRate);
     }
 
-    function redeemYieldFromAave(
+    /**
+     * @notice Redeem yield from Aave protocol(DeFi lending protocol)
+     */
+
+    function redeemYield(
         address _aaveLPool
     ) external onlyManager onlyMature {
         require(isDistributed, "Not distributed");
@@ -590,7 +594,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 withdrawAmount = IPool(_aaveLPool).withdraw(address(currency), type(uint256).max, address(this));
         isDistributed = false;
 
-        emit RedeemYieldFromAave(_aaveLPool, withdrawAmount);
+        emit RedeemYield(_aaveLPool, withdrawAmount);
     }
 
     /**

@@ -19,4 +19,6 @@ interface ISHFactory {
     function numOfProducts() external view returns (uint256);
 
     function isProduct(address _product) external returns (bool);
+
+    function getProduct(string memory _name) external returns (address);
 }
