@@ -7,31 +7,51 @@
 const { ethers, upgrades } = require("hardhat");
 
 async function main() {
-    // Deploy factory contract
-    const SHFactory = await ethers.getContractFactory("SHFactory");
-    const shFactory = await upgrades.deployProxy(SHFactory, []);
-    await shFactory.deployed();
+    // Factory contract address
+    const factoryAddr = "";
+    const shFactory = await ethers.getContractAt("SHFactory", factoryAddr);
 
-    console.log(`SHFactory deployed at ${shFactory.address}`);
+    // NFT contract address
+    const nftAddr = "";
 
-    /* const factoryAddr = "0xa8B68a1e2400Fe67984A2d4197a063c56b0d0771";
-    const SHFactory = await ethers.getContractFactory("SHFactory");
-    const shFactory = await upgrades.upgradeProxy(factoryAddr, SHFactory);
-    console.log("SHFactory upgraded"); */
+    const usdc = "0x07865c6E87B9F70255377e024ace6630C1Eaa37F";
 
-    // Deploy NFT contract
-    const SHNFT = await ethers.getContractFactory("SHNFT");
-    const shNFT = await upgrades.deployProxy(SHNFT, [
-        "Superhedge NFT", "SHN", shFactory.address
-    ]);
-    await shNFT.deployed();
+    const manager = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
+    const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; // Qredo Metamask Institutional
 
-    console.log(`SHNFT deployed at ${shNFT.address}`);
+    const productName = "ETH Bullish Spread"
 
-    /* const nftAddr = "0x17638b30e5d8440CdBFbFF7609D2a1493CD9cb73";
-    const SHNFT = await ethers.getContractFactory("SHNFT");
-    const shNFT = await upgrades.upgradeProxy(nftAddr, SHNFT);
-    console.log("SHNFT upgraded"); */
+    const issuanceCycle = {
+        coupon: 10,
+        strikePrice1: 1400,
+        strikePrice2: 1600,
+        strikePrice3: 0,
+        strikePrice4: 0,
+        tr1: 11750,
+        tr2: 10040,
+        issuanceDate: Math.floor(Date.now() / 1000) + 7 * 86400,
+        maturityDate: Math.floor(Date.now() / 1000) + 30 * 86400,
+        apy: "7-15%",
+        uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
+    }
+
+    // Create new product
+    const tx = await shFactory.createProduct(
+        productName, // product name
+        "ETH/USDC", // underlying
+        usdc, // USDC address on Goerli testnet
+        manager,
+        nftAddr, // ERC1155 NFT address
+        qredoWallet, // QREDO Wallet
+        20000, // Max capacity
+        issuanceCycle // First issuance cycle
+    );
+  
+    await tx.wait();
+  
+    const productAddr = await shFactory.getProduct(productName);
+
+    console.log(`SHProduct deployed at ${productAddr}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

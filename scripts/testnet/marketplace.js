@@ -15,7 +15,7 @@ async function main() {
     console.log(`AddressRegistry deployed at ${addressRegistry.address}`);
 
     // Deploy PriceFeed contract
-    const wETH = "0xD909178CC99d318e4D46e7E66a972955859670E1";
+    const wETH = "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6";
     const PriceFeed = await ethers.getContractFactory("PriceFeed");
     const priceFeed = await upgrades.deployProxy(PriceFeed, [
         addressRegistry.address, wETH
@@ -31,7 +31,7 @@ async function main() {
 
     console.log(`TokenRegistry deployed at ${tokenRegistry.address}`);
 
-    /* const platformFee = 5; // 0.5% of sales price
+    const platformFee = 5; // 0.5% of sales price
     const feeRecipient = "0x6Ca8304ae1973C205c6ac9A6Fb82a017cA800e77";
 
     const SHMarketplace = await ethers.getContractFactory("SHMarketplace");
@@ -40,19 +40,20 @@ async function main() {
     ]);
     await shMarketplace.deployed();
 
-    console.log(`SHMarketplace deployed at ${shMarketplace.address}`); */
+    console.log(`SHMarketplace deployed at ${shMarketplace.address}`);
 
     // Upgrade Marketplace contract
-    const marketplaceAddr = "0x9e46a406e38eB4e664B9F38b0809444C1d33FFa8";
+    /* const marketplaceAddr = "0x9e46a406e38eB4e664B9F38b0809444C1d33FFa8";
     const SHMarketplace = await ethers.getContractFactory("SHMarketplace");
     const shMarketplace = await upgrades.upgradeProxy(marketplaceAddr, SHMarketplace);
-    console.log("SHMarketplace upgraded");
+    console.log("SHMarketplace upgraded"); */
+    
     await addressRegistry.updateMarketplace(shMarketplace.address);
 
     await addressRegistry.updateTokenRegistry(tokenRegistry.address);
 
     await addressRegistry.updatePriceFeed(priceFeed.address);
-
+    
     await shMarketplace.updateAddressRegistry(addressRegistry.address);
 }
 
