@@ -8,11 +8,11 @@ const { ethers } = require("hardhat");
 
 async function main() {
     // Factory contract address
-    const factoryAddr = "";
+    const factoryAddr = "0x51EE34e5E202b932CE5a57390539C219E4EFbA84";
     const shFactory = await ethers.getContractAt("SHFactory", factoryAddr);
 
     // NFT contract address
-    const nftAddr = "";
+    const nftAddr = "0x72103513F160e1deC70e19304E2de918Ad3Cfd52";
 
     // Arbitrum Goerli USDC
     const usdc = "0x72A9c57cD5E2Ff20450e409cF6A542f1E6c710fc";
@@ -45,7 +45,7 @@ async function main() {
         manager,
         nftAddr, // ERC1155 NFT address
         qredoWallet, // QREDO Wallet
-        10000, // Max capacity
+        5000, // Max capacity
         issuanceCycle // First issuance cycle
     );
   
@@ -55,7 +55,7 @@ async function main() {
 
     console.log(`SHProduct deployed at ${productAddr}`);
 
-    const productName2 = "ETH Bullish Spread"
+    /* const productName2 = "ETH Bullish Spread"
     const issuanceCycle2 = {
         coupon: 10,
         strikePrice1: 1400,
@@ -78,7 +78,7 @@ async function main() {
         manager,
         shNFT.address, // ERC1155 NFT address
         qredoWallet, // QREDO Wallet
-        5000, // Max capacity
+        10000, // Max capacity
         issuanceCycle2 // First issuance cycle
     );
   
@@ -86,7 +86,7 @@ async function main() {
   
     const productAddr2 = await shFactory.getProduct(productName2);
 
-    console.log(`SHProduct2 deployed at ${productAddr2}`);
+    console.log(`SHProduct2 deployed at ${productAddr2}`); */
 }
 
 // We recommend this pattern to be able to use async/await everywhere
