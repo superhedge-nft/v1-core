@@ -79,25 +79,25 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _amount
     );
 
-    event DistributeWithClear(
+    /* event DistributeWithClear(
         address indexed _qredoDeribit,
         uint256 _optionRate,
         address[] _clearpools,
         uint256[] _yieldRates
-    );
+    ); */
 
-    event DistributeWithComp(
+    event DistributeFunds(
         address indexed _qredoDeribit,
         uint256 _optionRate,
         address indexed _cErc20Pool,
         uint256 _yieldRate
     );
 
-    event RedeemYieldFromClear(
+    /* event RedeemYieldFromClear(
         address[] _clearpools
-    );
+    ); */
     
-    event RedeemYieldFromComp(
+    event RedeemYield(
         address _cErc20Pool
     );
 
@@ -563,7 +563,11 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         emit WithdrawOption(msg.sender, userInfo[msg.sender].optionPayout);
     }
 
-    function distributeWithComp(
+    /**
+     * @notice After the fund is locked, distribute locked funds into Compound cUSDC pool and the Qredo wallet
+     * to generate passive income
+     */
+    function distributeFunds(
         uint256 _yieldRate,
         address _cErc20Pool
     ) external onlyManager onlyLocked {
@@ -583,10 +587,10 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         ICErc20(_cErc20Pool).mint(yieldAmount);
         isDistributed = true;
         
-        emit DistributeWithComp(qredoWallet, optionRate, _cErc20Pool, _yieldRate);
+        emit DistributeFunds(qredoWallet, optionRate, _cErc20Pool, _yieldRate);
     }
 
-    function redeemYieldFromComp(
+    function redeemYield(
         address _cErc20Pool
     ) external onlyManager onlyMature {
         require(isDistributed, "Not distributed");
@@ -595,14 +599,14 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         ICErc20(_cErc20Pool).redeem(cTokenAmount);
         isDistributed = false;
 
-        emit RedeemYieldFromComp(_cErc20Pool);
+        emit RedeemYield(_cErc20Pool);
     }
 
     /**
      * @notice After the fund is locked, distribute USDC into the Qredo wallet and
      * the lending pools to generate passive income
      */
-    function distributeWithClear(
+    /* function distributeWithClear(
         uint256[] calldata _yieldRates, 
         address[] calldata _clearpools
     ) external onlyManager onlyLocked {
@@ -631,9 +635,9 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         }
         isDistributed = true;
         emit DistributeWithClear(qredoWallet, optionRate, _clearpools, _yieldRates);
-    }
+    } */
 
-    function redeemYieldFromClear(
+    /* function redeemYieldFromClear(
         address[] calldata _clearpools
     ) external onlyManager onlyMature {
         require(isDistributed, "Not distributed");
@@ -645,7 +649,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         isDistributed = false;
         
         emit RedeemYieldFromClear(_clearpools);
-    }
+    } */
 
 
     /**
