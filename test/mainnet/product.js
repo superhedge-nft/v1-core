@@ -204,8 +204,8 @@ describe("SHFactory test suite", function () {
             const yieldRate = 80;
 
             expect(
-                await shProduct.distributeWithComp(yieldRate, cUSDCAddr)
-            ).to.emit(shProduct, "DistributeWithComp")
+                await shProduct.distributeFunds(yieldRate, cUSDCAddr)
+            ).to.emit(shProduct, "DistributeFunds")
             .withArgs(qredoWallet, optionRate, cUSDCAddr, yieldRate);
             
             expect(await shProduct.isDistributed()).to.equal(true);
@@ -306,8 +306,8 @@ describe("SHFactory test suite", function () {
 
         it("Redeem yield from Compound", async() => {
             expect(
-                await shProduct.redeemYieldFromComp(cUSDCAddr)
-            ).to.emit(shProduct, "RedeemYieldFromComp").withArgs(cUSDCAddr);
+                await shProduct.redeemYield(cUSDCAddr)
+            ).to.emit(shProduct, "RedeemYield").withArgs(cUSDCAddr);
             expect(await shProduct.isDistributed()).to.equal(false);
         });
 
