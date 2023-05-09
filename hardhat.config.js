@@ -18,14 +18,15 @@ module.exports = {
       chainId: 1337,
       forking: {
         enabled: true,
-        url: `https://rpc.ankr.com/eth`
+        url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_MAINNET}`,
       }
     },
     goerli: {
       url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_GOERLI}`,
       chainId: 5,
       accounts: [process.env.PRIVATE_KEY],
-      gasPrice: 80000000000
+      // gasPrice: 80000000000,
+      // gas: 2100000
     },
     mainnet: {
       url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_MAINNET}`,

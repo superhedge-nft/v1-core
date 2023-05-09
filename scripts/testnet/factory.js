@@ -18,20 +18,6 @@ async function main() {
     const SHFactory = await ethers.getContractFactory("SHFactory");
     const shFactory = await upgrades.upgradeProxy(factoryAddr, SHFactory);
     console.log("SHFactory upgraded"); */
-
-    // Deploy NFT contract
-    const SHNFT = await ethers.getContractFactory("SHNFT");
-    const shNFT = await upgrades.deployProxy(SHNFT, [
-        "Superhedge NFT", "SHN", shFactory.address
-    ]);
-    await shNFT.deployed();
-
-    console.log(`SHNFT deployed at ${shNFT.address}`);
-
-    /* const nftAddr = "0x17638b30e5d8440CdBFbFF7609D2a1493CD9cb73";
-    const SHNFT = await ethers.getContractFactory("SHNFT");
-    const shNFT = await upgrades.upgradeProxy(nftAddr, SHNFT);
-    console.log("SHNFT upgraded"); */
 }
 
 // We recommend this pattern to be able to use async/await everywhere
