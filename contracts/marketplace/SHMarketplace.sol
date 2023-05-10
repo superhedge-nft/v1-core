@@ -4,7 +4,6 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
@@ -28,7 +27,7 @@ interface IPriceFeed {
     function getPrice(address) external view returns (int256, uint8);
 }
 
-contract SHMarketplace is ERC1155HolderUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using AddressUpgradeable for address payable;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -114,7 +113,6 @@ contract SHMarketplace is ERC1155HolderUpgradeable, OwnableUpgradeable, Reentran
         feeReceipient = _feeRecipient;
         nextListingId = 1;
 
-        __ERC1155Holder_init();
         __Ownable_init();
         __ReentrancyGuard_init();
     }
@@ -169,7 +167,6 @@ contract SHMarketplace is ERC1155HolderUpgradeable, OwnableUpgradeable, Reentran
     ) external nonReentrant {
         require(_pricePerItem > 0, "Price must be greater than 0");
         require(_quantity > 0, "Quantity must be greater than 0");
-        require(_startingTime >= block.timestamp, "Invalid starting time");
 
         if (IERC165Upgradeable(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155)) {
             IERC1155Upgradeable nft = IERC1155Upgradeable(_nftAddress);
@@ -192,15 +189,6 @@ contract SHMarketplace is ERC1155HolderUpgradeable, OwnableUpgradeable, Reentran
 
         Listing memory listing = listings[nextListingId];
         require(listing.quantity == 0, "Listing already exists");
-
-        // Transfer NFT from caller to Marketplace
-        IERC1155Upgradeable(_nftAddress).safeTransferFrom(
-            _msgSender(),
-            address(this),
-            _tokenId,
-            _quantity,
-            bytes("")
-        );
 
         listings[nextListingId] = Listing(
             nextListingId,
@@ -269,17 +257,6 @@ contract SHMarketplace is ERC1155HolderUpgradeable, OwnableUpgradeable, Reentran
 
         _validStatus(listedItem.productAddress);
 
-        address _nftAddress = listedItem.nftAddress;
-
-        // Transfer NFT from marketplace to seller again
-        IERC1155Upgradeable(_nftAddress).safeTransferFrom(
-            address(this),
-            listedItem.owner,
-            listedItem.tokenId,
-            listedItem.quantity,
-            bytes("")
-        );
-
         delete listings[_listingId];
 
         emit ItemCanceled(
@@ -291,13 +268,13 @@ contract SHMarketplace is ERC1155HolderUpgradeable, OwnableUpgradeable, Reentran
     /// @notice Method for buying listed NFT
     /// @param _listingId ID of Listing
     /// @param _payToken Address of payment token
-    /// @param _owner Owner of Listing
+    /// @param _seller Owner of Listing
     function buyItem(
         uint256 _listingId,
         address _payToken,
-        address _owner
-    ) external nonReentrant isListed(_listingId, _owner) {
-        require(_msgSender() != _owner, "Buyer should be different from seller");
+        address _seller
+    ) external nonReentrant isListed(_listingId, _seller) {
+        require(_msgSender() != _seller, "Buyer should be different from seller");
         Listing memory listedItem = listings[_listingId];
 
         require(block.timestamp >= listedItem.startingTime, "Item not buyable");
@@ -314,15 +291,15 @@ contract SHMarketplace is ERC1155HolderUpgradeable, OwnableUpgradeable, Reentran
 
         IERC20Upgradeable(_payToken).safeTransferFrom(
             _msgSender(),
-            _owner,
+            _seller,
             price - feeAmount
         );
 
         address _nftAddress = listedItem.nftAddress;
 
-        // Transfer NFT from marketplace to buyer
+        // Transfer NFT to buyer
         IERC1155Upgradeable(_nftAddress).safeTransferFrom(
-            address(this),
+            _seller,
             _msgSender(),
             listedItem.tokenId,
             listedItem.quantity,
@@ -332,7 +309,7 @@ contract SHMarketplace is ERC1155HolderUpgradeable, OwnableUpgradeable, Reentran
         delete listings[_listingId];
 
         emit ItemSold(
-            _owner,
+            _seller,
             _msgSender(),
             getPrice(_payToken),
             _listingId
@@ -364,7 +341,7 @@ contract SHMarketplace is ERC1155HolderUpgradeable, OwnableUpgradeable, Reentran
 
     function _validStatus(address _product) internal view {
         DataTypes.Status status = ISHProduct(_product).status();
-        require(status == DataTypes.Status.Issued, "Product is not issued yet");
+        require(status == DataTypes.Status.Issued, "Product is not issued currently");
     }
 
     function _validPayToken(address _payToken) internal view {

@@ -15,10 +15,11 @@ module.exports = {
   },
   networks: {
     hardhat: {
+      chainId: 1337,
       forking: {
         enabled: true,
-        // url: `https://moonbeam.blastapi.io/${process.env.BLAST_PROJECT_ID}`,
-        url: `https://1rpc.io/glmr`
+        url: `https://rpc.ankr.com/moonbeam`,
+        blockNumber: 3533613
       }
     },
     moonbase: {
