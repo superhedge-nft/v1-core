@@ -163,7 +163,7 @@ describe("SHMarketplace test suite", () => {
             await tokenRegistry.connect(owner).add(mockUSDC.address);
 
             listingId = await shMarketplace.nextListingId();
-            console.log("listingId: ", listingId);
+            
             expect(await shMarketplace.connect(user1).listItem(
                 shNFT.address,
                 shProduct.address,
@@ -183,8 +183,6 @@ describe("SHMarketplace test suite", () => {
                 startingTime,
                 listingId
             );
-
-            console.log(await shMarketplace.listings(listingId));
         });
 
         it("Successfully updates item", async() => {
@@ -201,7 +199,7 @@ describe("SHMarketplace test suite", () => {
             );
         });
 
-        it("Create another listing", async() => {
+        it("Create another listing and cancel listing", async() => {
             listingId = await shMarketplace.nextListingId();
 
             expect(await shMarketplace.connect(user1).listItem(
@@ -221,6 +219,15 @@ describe("SHMarketplace test suite", () => {
                 mockUSDC.address, 
                 parseUnits('1200', 6), 
                 startingTime,
+                listingId
+            );
+        });
+
+        it("Cancel listing", async() => {
+            expect(
+                await shMarketplace.connect(user1).cancelListing(listingId)
+            ).to.be.emit(shMarketplace, "ItemCanceled").withArgs(
+                user1.address,
                 listingId
             );
         });
