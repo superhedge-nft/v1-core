@@ -183,6 +183,9 @@ describe("SHMarketplace test suite", () => {
                 startingTime,
                 listingId
             );
+
+            const listingCount = await shMarketplace.listingCount(user1.address, currentTokenID);
+            expect(listingCount).to.equal(quantity1);
         });
 
         it("Successfully updates item", async() => {
@@ -199,7 +202,7 @@ describe("SHMarketplace test suite", () => {
             );
         });
 
-        it("Create another listing and cancel listing", async() => {
+        it("Create another listing", async() => {
             listingId = await shMarketplace.nextListingId();
 
             expect(await shMarketplace.connect(user1).listItem(
@@ -221,6 +224,9 @@ describe("SHMarketplace test suite", () => {
                 startingTime,
                 listingId
             );
+
+            const listingCount = await shMarketplace.listingCount(user1.address, currentTokenID);
+            expect(listingCount).to.equal(quantity1 + quantity2);
         });
 
         it("Cancel listing", async() => {
@@ -230,6 +236,9 @@ describe("SHMarketplace test suite", () => {
                 user1.address,
                 listingId
             );
+
+            const listingCount = await shMarketplace.listingCount(user1.address, currentTokenID);
+            expect(listingCount).to.equal(quantity1);
         });
     });
 
@@ -310,6 +319,9 @@ describe("SHMarketplace test suite", () => {
             listing = await shMarketplace.listings(listingId);
             
             expect(listing.listingId).to.equal(0);
+
+            const listingCount = await shMarketplace.listingCount(user1.address, currentTokenID);
+            expect(listingCount).to.equal(0);
         });
     });
 });

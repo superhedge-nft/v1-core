@@ -94,6 +94,9 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @notice Address registry
     IAddressRegistry public addressRegistry;
 
+    /// @notice Store the total number of listings for the token id of each owner
+    mapping(address => mapping(uint256 => uint256)) public listingCount;
+
     modifier isListed(
         uint256 _listingId,
         address _owner
@@ -202,6 +205,10 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _startingTime
         );
 
+        unchecked {
+            listingCount[_msgSender()][_tokenId] += _quantity;
+        }
+
         emit ItemListed(
             _msgSender(),
             _nftAddress,
@@ -259,6 +266,8 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         delete listings[_listingId];
 
+        listingCount[_msgSender()][listedItem.tokenId] -= listedItem.quantity;
+
         emit ItemCanceled(
             listedItem.owner,
             _listingId
@@ -307,6 +316,8 @@ contract SHMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         );
 
         delete listings[_listingId];
+
+        listingCount[_seller][listedItem.tokenId] -= listedItem.quantity;
 
         emit ItemSold(
             _seller,
