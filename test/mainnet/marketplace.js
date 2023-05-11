@@ -74,7 +74,7 @@ describe("SHMarketplace test suite", () => {
         const qredoWallet = "0xED7256C5f380Ee42311216049dC8DF276BfA9547";
 
         it("Product created", async() => {
-            expect(await shFactory.createProduct(
+            await expect(shFactory.createProduct(
                 productName,
                 "ETH/USDC",
                 mockUSDC.address,
@@ -83,14 +83,14 @@ describe("SHMarketplace test suite", () => {
                 qredoWallet,
                 100000,
                 issuanceCycle
-              )).to.be.emit(shFactory, "ProductCreated");
+            )).to.be.emit(shFactory, "ProductCreated");
           
-              expect(await shFactory.numOfProducts()).to.equal(1);
+            expect(await shFactory.numOfProducts()).to.equal(1);
           
-              // get product
-              const productAddr = await shFactory.getProduct(productName);
-              const SHProduct = await ethers.getContractFactory("SHProduct");
-              shProduct = SHProduct.attach(productAddr);
+            // get product
+            const productAddr = await shFactory.getProduct(productName);
+            const SHProduct = await ethers.getContractFactory("SHProduct");
+            shProduct = SHProduct.attach(productAddr);
         });
 
         it("User1 deposits 5000 USDC and receive NFT token", async() => {
@@ -102,8 +102,8 @@ describe("SHMarketplace test suite", () => {
             const amount = parseUnits("5000", 6);
             await mockUSDC.connect(user1).approve(shProduct.address, amount);
 
-            expect(
-                await shProduct.connect(user1).deposit(amount, false)
+            await expect(
+                shProduct.connect(user1).deposit(amount, false)
             ).to.be.emit(shProduct, "Deposit");
         });
     });
@@ -164,7 +164,7 @@ describe("SHMarketplace test suite", () => {
 
             listingId = await shMarketplace.nextListingId();
             
-            expect(await shMarketplace.connect(user1).listItem(
+            await expect(shMarketplace.connect(user1).listItem(
                 shNFT.address,
                 shProduct.address,
                 currentTokenID,
@@ -190,7 +190,7 @@ describe("SHMarketplace test suite", () => {
 
         it("Successfully updates item", async() => {
             const newPrice = parseUnits('1200', 6);
-            expect(await shMarketplace.connect(user1).updateListing(
+            await expect(shMarketplace.connect(user1).updateListing(
                 listingId,
                 mockUSDC.address,
                 newPrice
@@ -205,7 +205,7 @@ describe("SHMarketplace test suite", () => {
         it("Create another listing", async() => {
             listingId = await shMarketplace.nextListingId();
 
-            expect(await shMarketplace.connect(user1).listItem(
+            await expect(shMarketplace.connect(user1).listItem(
                 shNFT.address,
                 shProduct.address,
                 currentTokenID,
@@ -230,8 +230,8 @@ describe("SHMarketplace test suite", () => {
         });
 
         it("Cancel listing", async() => {
-            expect(
-                await shMarketplace.connect(user1).cancelListing(listingId)
+            await expect(
+                shMarketplace.connect(user1).cancelListing(listingId)
             ).to.be.emit(shMarketplace, "ItemCanceled").withArgs(
                 user1.address,
                 listingId
@@ -290,8 +290,8 @@ describe("SHMarketplace test suite", () => {
             
             let listing = await shMarketplace.listings(listingId);
 
-            expect(
-                await shMarketplace.connect(user2).buyItem(
+            await expect(
+                shMarketplace.connect(user2).buyItem(
                     listingId,
                     mockUSDC.address,
                     user1.address
