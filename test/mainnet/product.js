@@ -93,7 +93,7 @@ describe("SHFactory test suite", function () {
         });
 
         it("Successfully created", async () => {
-            expect(await shFactory.createProduct(
+            await expect(shFactory.createProduct(
               productName,
               "ETH/USDC",
               usdc.address,
@@ -118,7 +118,7 @@ describe("SHFactory test suite", function () {
         it("Update product name", async() => {
             await expect(shProduct.updateName(productName)).to.be.revertedWith("Product already exists");
             const newName = "ETH Bullish Spread1";
-            expect(shProduct.updateName(newName)).to.emit(shProduct, "UpdateName").withArgs(newName);
+            await expect(shProduct.updateName(newName)).to.emit(shProduct, "UpdateName").withArgs(newName);
             expect(await shProduct.name()).to.equal(newName);
         });
     });
@@ -160,8 +160,8 @@ describe("SHFactory test suite", function () {
 
             const currentTokenID = await shProduct.currentTokenId();
             
-            expect(
-                await shProduct.connect(user1).deposit(amount, false)
+            await expect(
+                shProduct.connect(user1).deposit(amount, false)
             ).to.be.emit(shProduct, "Deposit").withArgs(
                 user1.address, amount, currentTokenID, supply
             );
@@ -185,8 +185,8 @@ describe("SHFactory test suite", function () {
             // Update URI during fund lock
             await shProduct.fundLock();
 
-            expect(
-                await shProduct.updateURI(URI)
+            await expect(
+                shProduct.updateURI(URI)
             ).to.emit(shProduct, "UpdateURI").withArgs(tokenId, URI);
         });
 
@@ -203,8 +203,8 @@ describe("SHFactory test suite", function () {
             const optionRate = 20;
             const yieldRate = 80;
 
-            expect(
-                await shProduct.distributeFunds(yieldRate, cUSDCAddr)
+            await expect(
+                shProduct.distributeFunds(yieldRate, cUSDCAddr)
             ).to.emit(shProduct, "DistributeFunds")
             .withArgs(qredoWallet, optionRate, cUSDCAddr, yieldRate);
             
@@ -212,12 +212,12 @@ describe("SHFactory test suite", function () {
         });
         
         it("Check coupon balance", async () => {
-            expect(
-                await shProduct.issuance()
+            await expect(
+                shProduct.issuance()
             ).to.emit(shProduct, "Issuance");
 
-            expect(
-                await shProduct.weeklyCoupon()
+            await expect(
+                shProduct.weeklyCoupon()
             ).to.emit(shProduct, "WeeklyCoupon");
             let user1Info = await shProduct.userInfo(user1.address);
 
@@ -239,8 +239,8 @@ describe("SHFactory test suite", function () {
                 []
             );
 
-            expect(
-                await shProduct.weeklyCoupon()
+            await expect(
+                shProduct.weeklyCoupon()
             ).to.emit(shProduct, "WeeklyCoupon");
             
             const couponBalance = currentSupply * 1000 * Math.pow(10, 6) * 10 / 10000;
@@ -251,8 +251,8 @@ describe("SHFactory test suite", function () {
             expect(user1Info.coupon).to.equal(couponBalance);
             expect(user2Info.coupon).to.equal(couponBalance);
 
-            expect(
-                await shProduct.weeklyCoupon()
+            await expect(
+                shProduct.weeklyCoupon()
             ).to.emit(shProduct, "WeeklyCoupon");
 
             user1Info = await shProduct.userInfo(user1.address);
@@ -269,27 +269,26 @@ describe("SHFactory test suite", function () {
             
             const user1Info = await shProduct.userInfo(user1.address);
             const user2Info = await shProduct.userInfo(user2.address);
-
             // Pre fund from Qredo wallet
             await usdc.connect(user1).transfer(
                 shProduct.address, parseUnits("100", 6)
             );
-
-            expect(
-                await shProduct.connect(user1).withdrawCoupon()
+            
+            await expect(
+                shProduct.connect(user1).withdrawCoupon()
             ).to.emit(shProduct, "WithdrawCoupon").withArgs(user1.address, user1Info.coupon);
 
-            /* expect(
-                await shProduct.connect(user2).withdrawCoupon()
-            ).to.emit(shProduct, "WithdrawCoupon").withArgs(user2.address, user2Info.coupon); */
+            await expect(
+                shProduct.connect(user2).withdrawCoupon()
+            ).to.emit(shProduct, "WithdrawCoupon").withArgs(user2.address, user2Info.coupon);
         });
     });
 
     describe("After maturity", () => {
         it("Token Ids change", async() => {
             const prevTokenId = await shProduct.currentTokenId();
-            expect(
-                await shProduct.mature()
+            await expect(
+                shProduct.mature()
             ).to.emit(shProduct, "Mature");
 
             expect(await shProduct.prevTokenId()).to.equal(prevTokenId);
@@ -299,14 +298,14 @@ describe("SHFactory test suite", function () {
             const issuanceDate = Math.floor(Date.now() / 1000) + 2 * 7 * 86400;
             const maturityDate = Math.floor(Date.now() / 1000) + 6 * 7 * 86400;
 
-            expect(
-                await shProduct.updateTimes(issuanceDate, maturityDate)
+            await expect(
+                shProduct.updateTimes(issuanceDate, maturityDate)
             ).to.emit(shProduct, "UpdateTimes").withArgs(issuanceDate, maturityDate);
         });
 
         it("Redeem yield from Compound", async() => {
-            expect(
-                await shProduct.redeemYield(cUSDCAddr)
+            await expect(
+                shProduct.redeemYield(cUSDCAddr)
             ).to.emit(shProduct, "RedeemYield").withArgs(cUSDCAddr);
             expect(await shProduct.isDistributed()).to.equal(false);
         });
@@ -315,8 +314,8 @@ describe("SHFactory test suite", function () {
             const transferAmount = await usdc.balanceOf(qredoWallet);
             console.log("option profit: ", transferAmount);
             await usdc.connect(qredoSigner).approve(shProduct.address, transferAmount);
-            expect(
-                await shProduct.connect(qredoSigner).redeemOptionPayout(transferAmount)
+            await expect(
+                shProduct.connect(qredoSigner).redeemOptionPayout(transferAmount)
             ).to.emit(shProduct, "RedeemOptionPayout").withArgs(qredoWallet, transferAmount);
 
             expect(await shProduct.optionProfit()).to.equal(transferAmount);
@@ -351,24 +350,24 @@ describe("SHFactory test suite", function () {
                 shProduct.connect(user1).withdrawPrincipal()
             ).to.be.revertedWith("No principal");
 
-            console.log(await usdc.balanceOf(user2.address));
             const prevTokenId = await shProduct.prevTokenId();
             const prevSupply = await shNFT.balanceOf(user2.address, prevTokenId);
 
             const currentTokenId = await shProduct.currentTokenId();
             const currentSupply = await shNFT.balanceOf(user2.address, currentTokenId);
+            
+            const principal = (currentSupply + prevSupply) * 1000 * Math.pow(10, 6);
 
-            expect(
-                await shProduct.connect(user2).withdrawPrincipal()
+            await expect(
+                shProduct.connect(user2).withdrawPrincipal()
             ).to.emit(shProduct, "WithdrawPrincipal").withArgs(
                 user2.address,
+                principal,
                 prevTokenId,
                 prevSupply,
                 currentTokenId,
                 currentSupply
             );
-
-            console.log(await usdc.balanceOf(user2.address));
         });
         
         it("Update parameters after fund is locked", async() => {
@@ -417,7 +416,7 @@ describe("SHFactory test suite", function () {
             await shProduct.pause();
             expect(await shProduct.paused()).to.equal(true);
 
-            expect(await shFactory.createProduct(
+            await expect(shFactory.createProduct(
                 productName,
                 "ETH/USDC",
                 usdc.address,
