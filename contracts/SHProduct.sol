@@ -534,26 +534,28 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
      * @notice Withdraws user's coupon payout
      */
     function withdrawCoupon() external nonReentrant {
-        require(userInfo[msg.sender].coupon > 0, "No coupon payout");
-        require(totalBalance() >= userInfo[msg.sender].coupon, "Insufficient balance");
+        uint256 _couponAmount = userInfo[msg.sender].coupon;
+        require(_couponAmount > 0, "No coupon payout");
+        require(totalBalance() >= _couponAmount, "Insufficient balance");
         
-        currency.safeTransfer(msg.sender, userInfo[msg.sender].coupon);
+        currency.safeTransfer(msg.sender, _couponAmount);
         userInfo[msg.sender].coupon = 0;
 
-        emit WithdrawCoupon(msg.sender, userInfo[msg.sender].coupon);
+        emit WithdrawCoupon(msg.sender, _couponAmount);
     }
 
     /**
      * @notice Withdraws user's option payout
      */
     function withdrawOption() external nonReentrant {
-        require(userInfo[msg.sender].optionPayout > 0, "No option payout");
-        require(totalBalance() >= userInfo[msg.sender].optionPayout, "Insufficient balance");
+        uint256 _optionAmount = userInfo[msg.sender].optionPayout;
+        require(_optionAmount > 0, "No option payout");
+        require(totalBalance() >= _optionAmount, "Insufficient balance");
         
-        currency.safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
+        currency.safeTransfer(msg.sender, _optionAmount);
         userInfo[msg.sender].optionPayout = 0;
 
-        emit WithdrawOption(msg.sender, userInfo[msg.sender].optionPayout);
+        emit WithdrawOption(msg.sender, _optionAmount);
     }
 
     /**

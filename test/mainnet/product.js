@@ -86,7 +86,7 @@ describe("SHFactory test suite", function () {
         });
 
         it("Successfully created", async () => {
-            expect(await shFactory.createProduct(
+            await expect(shFactory.createProduct(
               productName,
               "ETH/USDC",
               usdc.address,
@@ -146,8 +146,8 @@ describe("SHFactory test suite", function () {
 
             const currentTokenID = await shProduct.currentTokenId();
             
-            expect(
-                await shProduct.connect(user1).deposit(amount, false)
+            await expect(
+                shProduct.connect(user1).deposit(amount, false)
             ).to.be.emit(shProduct, "Deposit").withArgs(
                 user1.address, amount, currentTokenID, supply
             );
@@ -167,16 +167,18 @@ describe("SHFactory test suite", function () {
             const tokenId = await shProduct.currentTokenId();
             const URI = "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH";
             await shNFT.setTokenURI(tokenId, URI);
-            console.log(tokenId);
+
             // Update URI during fund lock
             await shProduct.fundLock();
-            expect(
-                await shProduct.updateURI(URI)
+
+            await expect(
+                shProduct.updateURI(URI)
             ).to.emit(shProduct, "UpdateURI").withArgs(tokenId, URI);
         });
 
         it("User2 deposits 1000 USDC but it is reverted since fund is locked", async () => {
             const amount2 = parseUnits("1000", 6);
+
             await expect(
               shProduct.connect(user2).deposit(amount2, false)
             ).to.be.revertedWith("Not accepted status");
@@ -188,8 +190,8 @@ describe("SHFactory test suite", function () {
             const optionRate = 20;
             const yieldRate = 80;
 
-            expect(
-                await shProduct.distributeFunds(yieldRate, aaveLPoolAddr)
+            await expect(
+                shProduct.distributeFunds(yieldRate, aaveLPoolAddr)
             ).to.emit(shProduct, "DistributeFunds")
             .withArgs(qredoWallet, optionRate, aaveLPoolAddr, yieldRate);
             
@@ -199,13 +201,14 @@ describe("SHFactory test suite", function () {
         });
         
         it("Check coupon balance", async () => {
-            expect(
-                await shProduct.issuance()
+            await expect(
+                shProduct.issuance()
             ).to.emit(shProduct, "Issuance");
 
-            expect(
-                await shProduct.weeklyCoupon()
+            await expect(
+                shProduct.weeklyCoupon()
             ).to.emit(shProduct, "WeeklyCoupon");
+
             let user1Info = await shProduct.userInfo(user1.address);
 
             const currentTokenID = await shProduct.currentTokenId();
@@ -226,8 +229,8 @@ describe("SHFactory test suite", function () {
                 []
             );
 
-            expect(
-                await shProduct.weeklyCoupon()
+            await expect(
+                shProduct.weeklyCoupon()
             ).to.emit(shProduct, "WeeklyCoupon");
             
             const couponBalance = currentSupply * 1000 * Math.pow(10, 6) * 10 / 10000;
@@ -238,8 +241,8 @@ describe("SHFactory test suite", function () {
             expect(user1Info.coupon).to.equal(couponBalance);
             expect(user2Info.coupon).to.equal(couponBalance);
 
-            expect(
-                await shProduct.weeklyCoupon()
+            await expect(
+                shProduct.weeklyCoupon()
             ).to.emit(shProduct, "WeeklyCoupon");
 
             user1Info = await shProduct.userInfo(user1.address);
@@ -262,21 +265,21 @@ describe("SHFactory test suite", function () {
                 shProduct.address, parseUnits("100", 6)
             );
 
-            expect(
-                await shProduct.connect(user1).withdrawCoupon()
+            await expect(
+                shProduct.connect(user1).withdrawCoupon()
             ).to.emit(shProduct, "WithdrawCoupon").withArgs(user1.address, user1Info.coupon);
 
-            /* expect(
-                await shProduct.connect(user2).withdrawCoupon()
-            ).to.emit(shProduct, "WithdrawCoupon").withArgs(user2.address, user2Info.coupon); */
+            await expect(
+                shProduct.connect(user2).withdrawCoupon()
+            ).to.emit(shProduct, "WithdrawCoupon").withArgs(user2.address, user2Info.coupon);
         });
     });
 
     describe("After maturity", () => {
         it("Token Ids change", async() => {
             const prevTokenId = await shProduct.currentTokenId();
-            expect(
-                await shProduct.mature()
+            await expect(
+                shProduct.mature()
             ).to.emit(shProduct, "Mature");
 
             expect(await shProduct.prevTokenId()).to.equal(prevTokenId);
@@ -286,15 +289,16 @@ describe("SHFactory test suite", function () {
             const issuanceDate = Math.floor(Date.now() / 1000) + 7 * 86400;
             const maturityDate = Math.floor(Date.now() / 1000) + 30 * 86400;
 
-            expect(
-                await shProduct.updateTimes(issuanceDate, maturityDate)
+            await expect(
+                shProduct.updateTimes(issuanceDate, maturityDate)
             ).to.emit(shProduct, "UpdateTimes").withArgs(issuanceDate, maturityDate);
         });
 
         it("Redeem yield from Moonwell", async() => {
-            expect(
-                await shProduct.redeemYield(aaveLPoolAddr)
+            await expect(
+                shProduct.redeemYield(aaveLPoolAddr)
             ).to.emit(shProduct, "RedeemYield");
+
             expect(await shProduct.isDistributed()).to.equal(false);
         });
 
@@ -302,8 +306,8 @@ describe("SHFactory test suite", function () {
             const transferAmount = await usdc.balanceOf(qredoWallet);
             console.log("option profit: ", transferAmount);
             await usdc.connect(qredoSigner).approve(shProduct.address, transferAmount);
-            expect(
-                await shProduct.connect(qredoSigner).redeemOptionPayout(transferAmount)
+            await expect(
+                shProduct.connect(qredoSigner).redeemOptionPayout(transferAmount)
             ).to.emit(shProduct, "RedeemOptionPayout").withArgs(qredoWallet, transferAmount);
 
             expect(await shProduct.optionProfit()).to.equal(transferAmount);
@@ -344,11 +348,14 @@ describe("SHFactory test suite", function () {
 
             const currentTokenId = await shProduct.currentTokenId();
             const currentSupply = await shNFT.balanceOf(user2.address, currentTokenId);
+            
+            const principal = (parseInt(currentSupply) + parseInt(prevSupply)) * 1000 * Math.pow(10, 6);
 
-            expect(
-                await shProduct.connect(user2).withdrawPrincipal()
+            await expect(
+                shProduct.connect(user2).withdrawPrincipal()
             ).to.emit(shProduct, "WithdrawPrincipal").withArgs(
                 user2.address,
+                principal,
                 prevTokenId,
                 prevSupply,
                 currentTokenId,
@@ -399,7 +406,7 @@ describe("SHFactory test suite", function () {
             await shProduct.pause();
             expect(await shProduct.paused()).to.equal(true);
 
-            expect(await shFactory.createProduct(
+            await expect(shFactory.createProduct(
                 productName,
                 "ETH/USDC",
                 usdc.address,
