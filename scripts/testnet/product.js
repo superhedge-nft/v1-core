@@ -20,20 +20,20 @@ async function main() {
     // Qredo Metamask Institutional
     const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; 
 
-    const productName = "ETH Bullish Spread"
+    const productName = "ETH Bullish Spread 1"
 
     const issuanceCycle = {
-        coupon: 10,
-        strikePrice1: 2500,
+        coupon: 20,
+        strikePrice1: 2400,
         strikePrice2: 2700,
         strikePrice3: 0,
         strikePrice4: 0,
-        tr1: 11750,
-        tr2: 10040,
-        issuanceDate: Math.floor(Date.now() / 1000) + 7 * 86400,
+        tr1: 11350,
+        tr2: 10340,
+        issuanceDate: Math.floor(Date.now() / 1000) + 1 * 86400,
         maturityDate: Math.floor(Date.now() / 1000) + 30 * 86400,
-        apy: "7-15%",
-        uri: "https://gateway.pinata.cloud/ipfs/QmTc4VRM4Ev4aZVY9uhpDQpVxBnJX1rGtV7wGPAiBJaLgc"
+        apy: "6-13%",
+        uri: "https://gateway.pinata.cloud/ipfs/QmZfDeDQo7jQrJJ4RPx1MdfmFxBbaUa3j2TkmWvjuKNZLJ"
     }
 
     // Create new product
