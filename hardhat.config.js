@@ -18,8 +18,7 @@ module.exports = {
       chainId: 1337,
       forking: {
         enabled: true,
-        url: `https://rpc.ankr.com/moonbeam`,
-        blockNumber: 3533613
+        url: `https://rpc.ankr.com/moonbeam`
       }
     },
     moonbase: {
