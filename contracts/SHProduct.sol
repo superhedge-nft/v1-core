@@ -76,14 +76,14 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _amount
     );
 
-    event DistributeWithMoon(
+    event DistributeFunds(
         address indexed _qredoDeribit,
         uint256 _optionRate,
         address indexed _mErc20Pool,
         uint256 _yieldRate
     );
     
-    event RedeemYieldFromMoon(
+    event RedeemYield(
         address _mErc20Pool
     );
 
@@ -523,29 +523,31 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
      * @notice Withdraws user's coupon payout
      */
     function withdrawCoupon() external nonReentrant {
-        require(userInfo[msg.sender].coupon > 0, "No coupon payout");
-        require(totalBalance() >= userInfo[msg.sender].coupon, "Insufficient balance");
+        uint256 _couponAmount = userInfo[msg.sender].coupon;
+        require(_couponAmount > 0, "No coupon payout");
+        require(totalBalance() >= _couponAmount, "Insufficient balance");
         
-        currency.safeTransfer(msg.sender, userInfo[msg.sender].coupon);
+        currency.safeTransfer(msg.sender, _couponAmount);
         userInfo[msg.sender].coupon = 0;
 
-        emit WithdrawCoupon(msg.sender, userInfo[msg.sender].coupon);
+        emit WithdrawCoupon(msg.sender, _couponAmount);
     }
 
     /**
      * @notice Withdraws user's option payout
      */
     function withdrawOption() external nonReentrant {
-        require(userInfo[msg.sender].optionPayout > 0, "No option payout");
-        require(totalBalance() >= userInfo[msg.sender].optionPayout, "Insufficient balance");
+        uint256 _optionAmount = userInfo[msg.sender].optionPayout;
+        require(_optionAmount > 0, "No option payout");
+        require(totalBalance() >= _optionAmount, "Insufficient balance");
         
-        currency.safeTransfer(msg.sender, userInfo[msg.sender].optionPayout);
+        currency.safeTransfer(msg.sender, _optionAmount);
         userInfo[msg.sender].optionPayout = 0;
 
-        emit WithdrawOption(msg.sender, userInfo[msg.sender].optionPayout);
+        emit WithdrawOption(msg.sender, _optionAmount);
     }
 
-    function distributeWithMoon(
+    function distributeFunds(
         uint256 _yieldRate,
         address _mErc20Pool
     ) external onlyManager onlyLocked {
@@ -565,10 +567,10 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         IMErc20(_mErc20Pool).mint(yieldAmount);
         isDistributed = true;
         
-        emit DistributeWithMoon(qredoWallet, optionRate, _mErc20Pool, _yieldRate);
+        emit DistributeFunds(qredoWallet, optionRate, _mErc20Pool, _yieldRate);
     }
 
-    function redeemYieldFromMoon(
+    function redeemYield(
         address _mErc20Pool
     ) external onlyManager onlyMature {
         require(isDistributed, "Not distributed");
@@ -577,7 +579,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         IMErc20(_mErc20Pool).redeem(mTokenAmount);
         isDistributed = false;
 
-        emit RedeemYieldFromMoon(_mErc20Pool);
+        emit RedeemYield(_mErc20Pool);
     }
 
     /**
