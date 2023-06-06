@@ -141,8 +141,8 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     event WeeklyCoupon(
         address indexed _user,
         uint256 _amount,
-        uint256 _currentTokenId,
-        uint256 _currentSupply
+        uint256 _tokenId,
+        uint256 _supply
     );
 
     event UpdateCoupon(
