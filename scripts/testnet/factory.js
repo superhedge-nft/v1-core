@@ -14,7 +14,7 @@ async function main() {
 
     console.log(`SHFactory deployed at ${shFactory.address}`);
 
-    /* const factoryAddr = "0xa8B68a1e2400Fe67984A2d4197a063c56b0d0771";
+    /* const factoryAddr = "0x132f98F50c030020fa01C54e72f470ae7374b87F";
     const SHFactory = await ethers.getContractFactory("SHFactory");
     const shFactory = await upgrades.upgradeProxy(factoryAddr, SHFactory);
     console.log("SHFactory upgraded"); */

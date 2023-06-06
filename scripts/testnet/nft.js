@@ -8,7 +8,7 @@ const { ethers, upgrades } = require("hardhat");
 
 async function main() {
     // Factory contract address
-    const factoryAddr = "0x0D09452E92FcF098dAe6152fC27c9ea8424C8559";
+    const factoryAddr = "0x132f98F50c030020fa01C54e72f470ae7374b87F";
 
     // Deploy NFT contract
     const SHNFT = await ethers.getContractFactory("SHNFT");
