@@ -49,14 +49,14 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     mapping(address => bool) public whitelisted;
     
     event Deposit(
-        address indexed _from,
+        address indexed _user,
         uint256 _amount,
-        uint256 _currentTokenId,
+        uint256 _tokenId,
         uint256 _supply
     );
 
     event WithdrawPrincipal(
-        address indexed _to,
+        address indexed _user,
         uint256 _amount,
         uint256 _prevTokenId,
         uint256 _prevSupply,
@@ -65,12 +65,12 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     );
 
     event WithdrawCoupon(
-        address indexed _to,
+        address indexed _user,
         uint256 _amount
     );
 
     event WithdrawOption(
-        address indexed _to,
+        address indexed _user,
         uint256 _amount
     );
 
@@ -139,9 +139,10 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     );
     
     event WeeklyCoupon(
-        uint256 _coupon,
-        uint256 _numOfNftHolders,
-        uint256 _timestamp
+        address indexed _user,
+        uint256 _amount,
+        uint256 _currentTokenId,
+        uint256 _currentSupply
     );
 
     event UpdateCoupon(
@@ -333,11 +334,17 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         for (uint256 i = 0; i < totalHolders.length; i++) {
             uint256 tokenSupply = ISHNFT(shNFT).balanceOf(totalHolders[i], currentTokenId);
             if (tokenSupply > 0) {
-                userInfo[totalHolders[i]].coupon += _convertTokenToCurrency(tokenSupply) * issuanceCycle.coupon / 10000;
+                uint256 _amount = _convertTokenToCurrency(tokenSupply) * issuanceCycle.coupon / 10000;
+                userInfo[totalHolders[i]].coupon += _amount;
+                
+                emit WeeklyCoupon(
+                    totalHolders[i],
+                    _amount,
+                    currentTokenId,
+                    tokenSupply
+                );
             }
         }
-
-        emit WeeklyCoupon(issuanceCycle.coupon, totalHolders.length, block.timestamp);
     }
 
     /**
