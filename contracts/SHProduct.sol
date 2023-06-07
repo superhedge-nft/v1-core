@@ -350,9 +350,8 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     /**
      * @notice Update product name
      */
-    function updateName(string memory _name) external onlyManager {
-        address _product = ISHFactory(shFactory).getProduct(_name);
-        require(_product == address(0) || ISHProduct(_product).paused() == true, "Product already exists");
+    function updateName(string memory _name) external {
+        require(msg.sender == shFactory, "Not a factory contract");
         name = _name;
 
         emit UpdateName(_name);
