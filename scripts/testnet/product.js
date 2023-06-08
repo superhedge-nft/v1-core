@@ -21,42 +21,9 @@ async function main() {
     // Qredo Metamask Institutional
     const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A";
 
-    const productName = "BTC Bearish Spread"
+    const productName = "ETH Bullish Spread"
 
     const issuanceCycle = {
-        coupon: 20,
-        strikePrice1: 28000,
-        strikePrice2: 26000,
-        strikePrice3: 0,
-        strikePrice4: 0,
-        tr1: 10850,
-        tr2: 11240,
-        issuanceDate: Math.floor(Date.now() / 1000) + 1 * 86400,
-        maturityDate: Math.floor(Date.now() / 1000) + 30 * 86400,
-        apy: "8-13%",
-        uri: "https://gateway.pinata.cloud/ipfs/QmfXCbDZMpNhPLxxNHuxp7LESMadb9sd3Qkt33Bd9pYJBm"
-    }
-
-    // Create new product
-    const tx = await shFactory.createProduct(
-        productName, // product name
-        "BTC/USDC", // underlying
-        usdc, // USDC address on Goerli testnet
-        manager,
-        nftAddr, // ERC1155 NFT address
-        qredoWallet, // QREDO Wallet
-        5000, // Max capacity
-        issuanceCycle // First issuance cycle
-    );
-  
-    await tx.wait();
-  
-    const productAddr = await shFactory.getProduct(productName);
-
-    console.log(`SHProduct deployed at ${productAddr}`);
-
-    /* const productName2 = "ETH Bullish Spread"
-    const issuanceCycle2 = {
         coupon: 10,
         strikePrice1: 1400,
         strikePrice2: 1600,
@@ -71,22 +38,22 @@ async function main() {
     }
 
     // Create new product
-    const tx2 = await shFactory.createProduct(
-        productName2, // product name
+    const tx = await shFactory.createProduct(
+        productName, // product name
         "ETH/USDC", // underlying
         usdc, // USDC address on Goerli testnet
         manager,
         shNFT.address, // ERC1155 NFT address
         qredoWallet, // QREDO Wallet
         10000, // Max capacity
-        issuanceCycle2 // First issuance cycle
+        issuanceCycle // First issuance cycle
     );
   
-    await tx2.wait();
+    await tx.wait();
   
-    const productAddr2 = await shFactory.getProduct(productName2);
+    const productAddr = await shFactory.getProduct(productName);
 
-    console.log(`SHProduct2 deployed at ${productAddr2}`); */
+    console.log(`SHProduct deployed at ${productAddr}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
