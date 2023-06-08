@@ -20,7 +20,7 @@ async function main() {
     // Qredo Metamask Institutional
     const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A"; 
 
-    const productName = "ETH Bullish Spread"
+    const productName = "ETH Bullish Spread 1"
 
     const issuanceCycle = {
         coupon: 20,
