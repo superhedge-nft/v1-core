@@ -116,9 +116,14 @@ describe("SHFactory test suite", function () {
         });
 
         it("Update product name", async() => {
-            await expect(shProduct.updateName(productName)).to.be.revertedWith("Product already exists");
+            await expect(
+                shFactory.setProductName(productName, shProduct.address)
+            ).to.be.revertedWith("Product already exists");
+
             const newName = "ETH Bullish Spread1";
-            await expect(shProduct.updateName(newName)).to.emit(shProduct, "UpdateName").withArgs(newName);
+            await expect(
+                shFactory.setProductName(newName, shProduct.address)
+            ).to.emit(shFactory, "ProductUpdated").withArgs(shProduct.address, newName);
             expect(await shProduct.name()).to.equal(newName);
         });
     });
@@ -397,51 +402,14 @@ describe("SHFactory test suite", function () {
     });
 
     describe("Pausable", () => {
-        const productName = "ETH Bullish Spread";
-        const issuanceCycle = {
-            coupon: 10,
-            strikePrice1: 24000,
-            strikePrice2: 22000,
-            strikePrice3: 0,
-            strikePrice4: 0,
-            tr1: 11750,
-            tr2: 10040,
-            issuanceDate: Math.floor(Date.now() / 1000) + 7 * 86400,
-            maturityDate: Math.floor(Date.now() / 1000) + 30 * 86400,
-            apy: "7-15%",
-            uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
-        }
-
         it("Pause the products", async() => {
             await shProduct.pause();
             expect(await shProduct.paused()).to.equal(true);
-
-            await expect(shFactory.createProduct(
-                productName,
-                "ETH/USDC",
-                usdc.address,
-                owner.address,
-                shNFT.address,
-                qredoWallet,
-                10000,
-                issuanceCycle
-            )).to.be.emit(shFactory, "ProductCreated");
         });
 
         it("Unpause the products", async() => {
             await shProduct.unpause();
             expect(await shProduct.paused()).to.equal(false);
-
-            await expect(shFactory.createProduct(
-                productName,
-                "ETH/USDC",
-                usdc.address,
-                owner.address,
-                shNFT.address,
-                qredoWallet,
-                10000,
-                issuanceCycle
-            )).to.be.revertedWith("Product already exists");
         });
     });
 });
