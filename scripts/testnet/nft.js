@@ -8,7 +8,7 @@ const { ethers, upgrades } = require("hardhat");
 
 async function main() {
     // Factory contract address
-    const factoryAddr = "0x132f98F50c030020fa01C54e72f470ae7374b87F";
+    const factoryAddr = "0x0D09452E92FcF098dAe6152fC27c9ea8424C8559";
 
     // Deploy NFT contract
     const SHNFT = await ethers.getContractFactory("SHNFT");
@@ -19,7 +19,7 @@ async function main() {
 
     console.log(`SHNFT deployed at ${shNFT.address}`);
 
-    /* const nftAddr = "0x17638b30e5d8440CdBFbFF7609D2a1493CD9cb73";
+    /* const nftAddr = "0xe846De8fd3410028AE8e1778d2E05997C5943A94";
     const SHNFT = await ethers.getContractFactory("SHNFT");
     const shNFT = await upgrades.upgradeProxy(nftAddr, SHNFT);
     console.log("SHNFT upgraded"); */

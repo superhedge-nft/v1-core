@@ -252,7 +252,7 @@
             "label": "tokenIds",
             "offset": 0,
             "slot": "201",
-            "type": "t_struct(Counter)3209_storage",
+            "type": "t_struct(Counter)3084_storage",
             "contract": "SHNFT",
             "src": "contracts/SHNFT.sol:16"
           },
@@ -346,7 +346,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(Counter)3209_storage": {
+          "t_struct(Counter)3084_storage": {
             "label": "struct CountersUpgradeable.Counter",
             "members": [
               {
@@ -941,6 +941,125 @@
     "f0eecb27b00cda946cce318aec0db0a16ec5985d9bb4668785c2bd109504b410": {
       "address": "0xe0B2c0C3957d7EC348D8F5dB6c1a2eFF67DE4DE7",
       "txHash": "0x0cf4a3586286492a3a47e15c7e93b4e32e6220957f44a0ce82192d2b384d2df0",
+      "layout": {
+        "solcVersion": "0.8.14",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "products",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_address)dyn_storage",
+            "contract": "SHFactory",
+            "src": "contracts/SHFactory.sol:18"
+          },
+          {
+            "label": "getProduct",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_mapping(t_string_memory_ptr,t_address)",
+            "contract": "SHFactory",
+            "src": "contracts/SHFactory.sol:20"
+          },
+          {
+            "label": "isProduct",
+            "offset": 0,
+            "slot": "103",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "SHFactory",
+            "src": "contracts/SHFactory.sol:22"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_string_memory_ptr,t_address)": {
+            "label": "mapping(string => address)",
+            "numberOfBytes": "32"
+          },
+          "t_string_memory_ptr": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          },
+          "t_string_storage": {
+            "label": "string"
+          }
+        }
+      }
+    },
+    "76365f9e5c609226cfa65f88e647a11ac5dd4dfc1a82653fd3fb1ac0359c66a9": {
+      "address": "0x1f9b1B972F3B02c4a2188Ca49325162AB650C3B2",
+      "txHash": "0x7548ba286170b0efe868018f6c77c9fcb189d79c953a317260c8779ee90ac362",
       "layout": {
         "solcVersion": "0.8.14",
         "storage": [
