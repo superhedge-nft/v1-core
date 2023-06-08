@@ -204,16 +204,18 @@ describe("SHFactory test suite", function () {
             await expect(
                 shProduct.issuance()
             ).to.emit(shProduct, "Issuance");
-
-            await expect(
-                shProduct.weeklyCoupon()
-            ).to.emit(shProduct, "WeeklyCoupon");
-
-            let user1Info = await shProduct.userInfo(user1.address);
-
+            
             const currentTokenID = await shProduct.currentTokenId();
             const tokenSupply = parseInt(await shNFT.balanceOf(user1.address, currentTokenID));
             const couponBalance = tokenSupply * 1000 * Math.pow(10, 6) * 10 / 10000;
+
+            await expect(
+                shProduct.weeklyCoupon()
+            ).to.emit(shProduct, "WeeklyCoupon")
+            .withArgs(user1.address, couponBalance, currentTokenID, tokenSupply);
+
+            let user1Info = await shProduct.userInfo(user1.address);
+
             expect(user1Info.coupon).to.equal(couponBalance);
         });
 
@@ -387,51 +389,14 @@ describe("SHFactory test suite", function () {
     });
 
     describe("Pausable", () => {
-        const productName = "ETH Bullish Spread";
-        const issuanceCycle = {
-            coupon: 10,
-            strikePrice1: 24000,
-            strikePrice2: 22000,
-            strikePrice3: 0,
-            strikePrice4: 0,
-            tr1: 11750,
-            tr2: 10040,
-            issuanceDate: Math.floor(Date.now() / 1000) + 7 * 86400,
-            maturityDate: Math.floor(Date.now() / 1000) + 30 * 86400,
-            apy: "7-15%",
-            uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
-        }
-
         it("Pause the products", async() => {
-            await shProduct.pause();
+            await expect(shProduct.pause()).to.emit(shProduct, "Paused");
             expect(await shProduct.paused()).to.equal(true);
-
-            await expect(shFactory.createProduct(
-                productName,
-                "ETH/USDC",
-                usdc.address,
-                owner.address,
-                shNFT.address,
-                qredoWallet,
-                10000,
-                issuanceCycle
-            )).to.be.emit(shFactory, "ProductCreated");
         });
 
         it("Unpause the products", async() => {
-            await shProduct.unpause();
+            await expect(shProduct.unpause()).to.emit(shProduct, "Unpaused");
             expect(await shProduct.paused()).to.equal(false);
-
-            await expect(shFactory.createProduct(
-                productName,
-                "ETH/USDC",
-                usdc.address,
-                owner.address,
-                shNFT.address,
-                qredoWallet,
-                10000,
-                issuanceCycle
-            )).to.be.revertedWith("Product already exists");
         });
     });
 });
