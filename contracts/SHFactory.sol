@@ -29,6 +29,11 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
         uint256 maxCapacity
     );
 
+    event ProductUpdated(
+        address indexed product,
+        string name
+    );
+
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
@@ -57,8 +62,7 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
         uint256 _maxCapacity,
         DataTypes.IssuanceCycle memory _issuanceCycle        
     ) external onlyOwner {
-        require(getProduct[_name] == address(0) || ISHProduct(getProduct[_name]).paused() == true, 
-            "Product already exists");
+        require(getProduct[_name] == address(0), "Product already exists");
 
         require((_maxCapacity % 1000) == 0, "Max capacity must be whole-number thousands");
 
@@ -86,6 +90,20 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
         products.push(productAddr);
         
         emit ProductCreated(productAddr, _name, _underlying, _maxCapacity);
+    }
+
+    /**
+     * @notice set new product name
+     */
+    function setProductName(string memory _name, address _product) external onlyOwner {
+        require(getProduct[_name] == address(0), "Product already exists");
+        require(isProduct[_product], "Invalid product address");
+        string memory _oldName = ISHProduct(_product).name();
+        delete getProduct[_oldName];
+        getProduct[_name] = _product;
+        ISHProduct(_product).updateName(_name);
+
+        emit ProductUpdated(_product, _name);
     }
 
     /**

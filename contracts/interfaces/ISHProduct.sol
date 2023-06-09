@@ -4,6 +4,8 @@ pragma solidity ^0.8.9;
 import "../libraries/DataTypes.sol";
 
 interface ISHProduct {
+    function name() external view returns (string memory);
+
     function maxCapacity() external view returns (uint256);
 
     function shNFT() external view returns (address);
@@ -13,4 +15,6 @@ interface ISHProduct {
     function paused() external view returns (bool);
 
     function status() external view returns (DataTypes.Status);
+
+    function updateName(string memory _name) external;
 }
