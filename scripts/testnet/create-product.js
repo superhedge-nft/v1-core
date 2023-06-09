@@ -7,10 +7,10 @@
 const { ethers, upgrades } = require("hardhat");
 
 async function main() {
-    const factoryAddr = "0x4562b4A667BabA8EE3f2BcdED65ff916556C383E";
+    const factoryAddr = "0x467b31Caa1f26bCe5aE09C2b629026eE03C34C07";
     const shFactory = await ethers.getContractAt("SHFactory", factoryAddr);
 
-    const nftAddr = "0x539890cB8E365495908E844e42ee36E0e6b354B4";
+    const nftAddr = "0x9CC080062ddd770ef30C7a33a5764174FB6d022C";
 
     const usdc = "0x3799D95Ee109129951c6b31535b2B5AA6dbF108c";
 
@@ -22,15 +22,15 @@ async function main() {
 
     const issuanceCycle = {
         coupon: 10,
-        strikePrice1: 1400,
-        strikePrice2: 1600,
+        strikePrice1: 1600,
+        strikePrice2: 1800,
         strikePrice3: 0,
         strikePrice4: 0,
         tr1: 11750,
         tr2: 10040,
-        issuanceDate: 1683244800,
-        maturityDate: 1685404800,
-        apy: "7-15%",
+        issuanceDate: Math.floor(Date.now() / 1000) + 1 * 86400,
+        maturityDate: Math.floor(Date.now() / 1000) + 30 * 86400,
+        apy: "8-14%",
         uri: "https://gateway.pinata.cloud/ipfs/QmWsa9T8Br16atEbYKit1e9JjXgNGDWn45KcYYKT2eLmSH"
     }
 
