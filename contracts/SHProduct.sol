@@ -144,6 +144,11 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _tokenId,
         uint256 _supply
     );
+    
+    event OptionPayout(
+        address indexed _user,
+        uint256 _amount
+    );
 
     event UpdateCoupon(
         uint256 _newCoupon
@@ -274,7 +279,9 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
             uint256 totalSupply = ISHNFT(shNFT).totalSupply(prevTokenId);
             for (uint256 i = 0; i < totalHolders.length; i++) {
                 uint256 prevSupply = ISHNFT(shNFT).balanceOf(totalHolders[i], prevTokenId);
-                userInfo[totalHolders[i]].optionPayout += prevSupply * _optionProfit / totalSupply;
+                uint256 _optionPayout = prevSupply * _optionProfit / totalSupply;
+                userInfo[totalHolders[i]].optionPayout += _optionPayout;
+                emit OptionPayout(totalHolders[i], _optionPayout);
             }
             optionProfit = 0;
         }
