@@ -324,7 +324,9 @@ describe("SHFactory test suite", function () {
             expect(user2Info.optionPayout).to.equal(0);
             const optionProfit = await shProduct.optionProfit();
 
-            await shProduct.fundAccept();
+            await expect(
+                shProduct.fundAccept()
+            ).to.emit(shProduct, "OptionPayout").withArgs(user2.address, optionProfit);
 
             user1Info = await shProduct.userInfo(user1.address);
             user2Info = await shProduct.userInfo(user2.address);
