@@ -14,6 +14,11 @@ async function main() {
 
     console.log(`SHFactory deployed at ${shFactory.address}`);
 
+    /* const factoryAddr = "0x51EE34e5E202b932CE5a57390539C219E4EFbA84";
+    const SHFactory = await ethers.getContractFactory("SHFactory");
+    const shFactory = await upgrades.upgradeProxy(factoryAddr, SHFactory);
+    console.log("SHFactory upgraded"); */
+
     // Deploy NFT contract
     const SHNFT = await ethers.getContractFactory("SHNFT");
     const shNFT = await upgrades.deployProxy(SHNFT, [
