@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHFactory.sol";
 import "./interfaces/ISHNFT.sol";
-import "./interfaces/aave/IPool.sol";
+import "./interfaces/lendle/IPool.sol";
 import "./libraries/DataTypes.sol";
 import "./libraries/Array.sol";
 
@@ -82,12 +82,12 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     event DistributeFunds(
         address indexed _qredoDeribit,
         uint256 _optionRate,
-        address indexed _aaveLPool,
+        address indexed _lendleLPool,
         uint256 _yieldRate
     );
     
     event RedeemYield(
-        address _aaveLPool,
+        address _lendleLPool,
         uint256 _amount
     );
 
@@ -576,7 +576,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
      */
     function distributeFunds(
         uint256 _yieldRate,
-        address _aaveLPool
+        address _lendleLPool
     ) external onlyManager onlyLocked {
         require(!isDistributed, "Already distributed");
         require(_yieldRate <= 100, "Yield rate should be equal or less than 100");
@@ -588,28 +588,32 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
             currency.transfer(qredoWallet, optionAmount);
         }
 
-        // Lend into the Aave V3 aUSDC pool
+        // Lend into the Lendle aUSDC pool
         uint256 yieldAmount = currentCapacity * _yieldRate / 100;
-        currency.approve(_aaveLPool, yieldAmount);
-        IPool(_aaveLPool).supply(address(currency), yieldAmount, address(this), 0);
+        currency.approve(_lendleLPool, yieldAmount);
+        IPool(_lendleLPool).deposit(address(currency), yieldAmount, address(this), 0);
         isDistributed = true;
         
-        emit DistributeFunds(qredoWallet, optionRate, _aaveLPool, _yieldRate);
+        emit DistributeFunds(qredoWallet, optionRate, _lendleLPool, _yieldRate);
     }
 
     /**
-     * @notice Redeem yield from Aave protocol(DeFi lending protocol)
+     * @notice Redeem yield from Lendle protocol(DeFi lending protocol)
      */
 
     function redeemYield(
-        address _aaveLPool
+        address _lendleLPool
     ) external onlyManager onlyMature {
         require(isDistributed, "Not distributed");
         // Withdraw your asset based on a aToken amount
-        uint256 withdrawAmount = IPool(_aaveLPool).withdraw(address(currency), type(uint256).max, address(this));
+        uint256 withdrawAmount = IPool(_lendleLPool).withdraw(
+            address(currency), 
+            type(uint256).max, 
+            address(this)
+        );
         isDistributed = false;
 
-        emit RedeemYield(_aaveLPool, withdrawAmount);
+        emit RedeemYield(_lendleLPool, withdrawAmount);
     }
 
     /**
