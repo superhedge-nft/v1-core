@@ -18,17 +18,12 @@ module.exports = {
       chainId: 1337,
       forking: {
         enabled: true,
-        url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_ARBITRUM_MAINNET}`
+        url: `https://rpc.mantle.xyz`
       }
     },
-    arbitrumGoerli: {
-      url: `https://arb-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_ARBITRUM_GOERLI}`,
-      chainId: 421613,
-      accounts: [process.env.PRIVATE_KEY]
-    },
-    arbitrumOne: {
-      url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY_ARBITRUM_MAINNET}`,
-      chainId: 42161,
+    mantleTestnet: {
+      url: "https://rpc.testnet.mantle.xyz/",
+      chainId: 5001,
       accounts: [process.env.PRIVATE_KEY]
     }
   },
