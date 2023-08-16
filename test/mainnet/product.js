@@ -5,15 +5,15 @@ const { parseEther, parseUnits } = ethers.utils;
 
 describe("SHFactory test suite", function () {
     let shFactory, shProduct, shNFT, usdc;
-    let aaveLPool; // Aave v3 lending contract
+    let lendleLPool; // Lendle lending pool
     let owner, user1, user2, whaleSigner;
 
-    const whaleAddress = "0x62383739D68Dd0F844103Db8dFb05a7EdED5BBE6";
+    const whaleAddress = "0xf89d7b9c864f589bbF53a82105107622B35EaA40";
     const qredoWallet = "0xbba1088BD130AF05AA0ab3EA89464F10C83B984A";
-    const USDC = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"; // Moonbeam Wormhole USDC
+    const USDC = "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9"; // Mantle USDC
 
-    // Aave lending pool address
-    const aaveLPoolAddr = "0x794a61358D6845594F94dc1DB02A252b5b4814aD";
+    // Lendle lending pool address
+    const lendleLPoolAddr = "0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3";
 
     before(async () => {
         [owner, user1, user2] = await ethers.getSigners();
@@ -30,9 +30,9 @@ describe("SHFactory test suite", function () {
     
         usdc = await ethers.getContractAt("IERC20", USDC);
         
-        aaveLPool = await ethers.getContractAt(
+        lendleLPool = await ethers.getContractAt(
             "IPool",
-            aaveLPoolAddr
+            lendleLPoolAddr
         );
 
         // unlock accounts
@@ -186,14 +186,14 @@ describe("SHFactory test suite", function () {
     });
 
     describe("Distribute assets & check coupon balance", () => {
-        it("Distribute with Aave V3", async() => {
+        it("Distribute with Lendle", async() => {
             const optionRate = 20;
             const yieldRate = 80;
 
             await expect(
-                shProduct.distributeFunds(yieldRate, aaveLPoolAddr)
+                shProduct.distributeFunds(yieldRate, lendleLPoolAddr)
             ).to.emit(shProduct, "DistributeFunds")
-            .withArgs(qredoWallet, optionRate, aaveLPoolAddr, yieldRate);
+            .withArgs(qredoWallet, optionRate, lendleLPoolAddr, yieldRate);
             
             expect(await shProduct.isDistributed()).to.equal(true);
 
@@ -298,7 +298,7 @@ describe("SHFactory test suite", function () {
 
         it("Redeem yield from Moonwell", async() => {
             await expect(
-                shProduct.redeemYield(aaveLPoolAddr)
+                shProduct.redeemYield(lendleLPoolAddr)
             ).to.emit(shProduct, "RedeemYield");
 
             expect(await shProduct.isDistributed()).to.equal(false);

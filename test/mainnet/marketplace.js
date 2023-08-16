@@ -9,7 +9,7 @@ describe("SHMarketplace test suite", () => {
     let owner, feeRecipient;
 
     const platformFee = 5; // 0.5% of sales price
-    const wETH = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+    const wETH = "0xdeaddeaddeaddeaddeaddeaddeaddeaddead1111";
 
     before(async() => {
         [owner, feeRecipient, user1, user2] = await ethers.getSigners();
@@ -248,11 +248,6 @@ describe("SHMarketplace test suite", () => {
 
         before(async() => {
             currentTokenID = await shProduct.currentTokenId();
-
-            // USDC/USD aggregator
-            const usdcOracle = "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3";
-            // set USDC/USD price oracle
-            await priceFeed.registerOracle(mockUSDC.address, usdcOracle);
         });
         
         it("Reverts if a buyer is a seller", async() => {
