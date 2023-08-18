@@ -32,6 +32,18 @@ module.exports = {
     currency: "USD",
   },
   etherscan: {
-    apiKey: process.env.ARBISCAN_API_KEY,
+    apiKey: {
+      mantleTestnet: 'xyz', //random value
+    },
+    customChains: [
+      {
+        network: "mantleTestnet",
+        chainId: 5001,
+        urls: {
+          apiURL: "https://explorer.testnet.mantle.xyz/api",
+          browserURL: "https://explorer.testnet.mantle.xyz"
+        },
+      },
+    ],
   }
 };
