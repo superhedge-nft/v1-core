@@ -45,7 +45,7 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
      * @notice Function to create new product(vault)
      * @param _name is the product name
      * @param _underlying is the underlying asset label
-     * @param _currency principal asset, USDC address
+     * @param _currency principal asset, USDC address Or address(0) in case of ETH staking
      * @param _manager manager of the product
      * @param _qredoWallet is the wallet address of Qredo
      * @param _maxCapacity is the maximum USDC amount that this product can accept
@@ -64,7 +64,8 @@ contract SHFactory is ISHFactory, OwnableUpgradeable {
     ) external onlyOwner {
         require(getProduct[_name] == address(0), "Product already exists");
 
-        require((_maxCapacity % 1000) == 0, "Max capacity must be whole-number thousands");
+        if (address(_currency) != address(0)) 
+            require((_maxCapacity % 1000) == 0, "Max capacity must be whole-number thousands");
 
         // create new product contract
         SHProduct product = new SHProduct();
