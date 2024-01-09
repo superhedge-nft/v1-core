@@ -21,5 +21,8 @@ interface IWithdrawalQueue {
     ///  Reverts if any requestId or hint in arguments are not valid
     ///  Reverts if any request is not finalized or already claimed
     ///  Reverts if msg sender is not an owner of the requests
-    function claimWithdrawals(uint256[] calldata _requestIds, uint256[] calldata _hints) external;
+    function claimWithdrawals(
+        uint256[] calldata _requestIds, 
+        uint256[] calldata _hints
+    ) external;
 }
