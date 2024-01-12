@@ -8,8 +8,9 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "./interfaces/ISHProduct.sol";
 import "./interfaces/ISHNFT.sol";
 import "./interfaces/ISHFactory.sol";
-import "./interfaces/clearpool/IPoolMaster.sol";
-import "./interfaces/compound/ICErc20.sol";
+import "./interfaces/lido/ILidoLocator.sol";
+import "./interfaces/lido/ILido.sol";
+import "./interfaces/lido/IWithdrawalQueue.sol";
 import "./libraries/DataTypes.sol";
 import "./libraries/Array.sol";
 
@@ -79,23 +80,12 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _amount
     );
 
-    /* event DistributeWithClear(
-        address indexed _qredoDeribit,
-        uint256 _optionRate,
-        address[] _clearpools,
-        uint256[] _yieldRates
-    ); */
-
     event DistributeFunds(
         address indexed _qredoDeribit,
         uint256 _optionRate,
         address indexed _cErc20Pool,
         uint256 _yieldRate
     );
-
-    /* event RedeemYieldFromClear(
-        address[] _clearpools
-    ); */
     
     event RedeemYield(
         address _cErc20Pool
@@ -150,9 +140,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _amount
     );
 
-    event UpdateCoupon(
-        uint256 _newCoupon
-    );
+    event UpdateCoupon(uint256 _newCoupon);
 
     event UpdateStrikePrices(
         uint256 _strikePrice1,
@@ -161,28 +149,15 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _strikePrice4
     );
 
-    event UpdateURI(
-        uint256 _currentTokenId,
-        string _uri
-    );
+    event UpdateURI(uint256 _currentTokenId, string _uri);
 
-    event UpdateTRs(
-        uint256 _newTr1,
-        uint256 _newTr2
-    );
+    event UpdateTRs(uint256 _newTr1, uint256 _newTr2);
 
-    event UpdateAPY(
-        string _apy
-    );
+    event UpdateAPY(string _apy);
 
-    event UpdateTimes(
-        uint256 _issuanceDate,
-        uint256 _maturityDate
-    );
+    event UpdateTimes(uint256 _issuanceDate, uint256 _maturityDate);
 
-    event UpdateName(
-        string _name
-    );
+    event UpdateName(string _name);
 
     function initialize(
         string memory _name,
@@ -491,28 +466,55 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     }
 
     /**
+     * @dev Deposits ETH into the structured product and mint ERC1155 NFT
+     * @param _type True: include profit, False: without profit
+     */
+    function depositETH(bool _type) external payable whenNotPaused nonReentrant onlyAccepted {
+        require(address(currency) == address(0), "Should be ETH staking product");
+
+        _deposit(msg.value, _type);
+    }
+
+    /**
      * @dev Deposits the USDC into the structured product and mint ERC1155 NFT
      * @param _amount is the amount of USDC to deposit
      * @param _type True: include profit, False: without profit
      */
     function deposit(uint256 _amount, bool _type) external whenNotPaused nonReentrant onlyAccepted {
+        require(address(currency) != address(0), "Should be USDC staking product");
+
+        _deposit(_amount, _type);
+    }
+
+    function _deposit(uint256 _amount, bool _type) internal {
         require(_amount > 0, "Amount must be greater than zero");
-        
-        uint256 amountToDeposit = _amount;
+
         if (_type == true) {
-            amountToDeposit += userInfo[msg.sender].coupon + userInfo[msg.sender].optionPayout;
+            _amount += userInfo[msg.sender].coupon + userInfo[msg.sender].optionPayout;
         }
 
         uint256 decimals = _currencyDecimals();
-        require((amountToDeposit % (1000 * 10 ** decimals)) == 0, "Amount must be whole-number thousands");
-        require((maxCapacity * 10 ** decimals) >= (currentCapacity + amountToDeposit), "Product is full");
+        if (address(currency) == address(0)) {
+            decimals = 18;
+            require((_amount % 1 ether) == 0, "Amount must be whole-number eth");
+            
+        } else {
+            require((_amount % (1000 * 10 ** decimals)) == 0, "Amount must be whole-number thousands");
+        }
 
-        uint256 supply = amountToDeposit / (1000 * 10 ** decimals);
+        require((maxCapacity * 10 ** decimals) >= (currentCapacity + _amount), "Product is full");
 
-        currency.safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 supply;
+        if (address(currency) == address(0)) {
+            supply = _amount / 1 ether;
+        } else {
+            supply = _amount / (1000 * 10 ** decimals);
+            currency.safeTransferFrom(msg.sender, address(this), _amount);
+        }
+
         ISHNFT(shNFT).mint(msg.sender, currentTokenId, supply, issuanceCycle.uri);
 
-        currentCapacity += amountToDeposit;
+        currentCapacity += _amount;
         if (_type == true) {
             userInfo[msg.sender].coupon = 0;
             userInfo[msg.sender].optionPayout = 0;
@@ -533,8 +535,9 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         require(totalSupply > 0, "No principal");
         uint256 principal = _convertTokenToCurrency(totalSupply);
         require(totalBalance() >= principal, "Insufficient balance");
-        
-        currency.safeTransfer(msg.sender, principal);
+
+        _transfer(principal);
+
         ISHNFT(shNFT).burn(msg.sender, prevTokenId, prevSupply);
         ISHNFT(shNFT).burn(msg.sender, currentTokenId, currentSupply);
 
@@ -558,7 +561,7 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         require(_couponAmount > 0, "No coupon payout");
         require(totalBalance() >= _couponAmount, "Insufficient balance");
         
-        currency.safeTransfer(msg.sender, _couponAmount);
+        _transfer(_couponAmount);
         userInfo[msg.sender].coupon = 0;
 
         emit WithdrawCoupon(msg.sender, _couponAmount);
@@ -572,19 +575,19 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         require(_optionAmount > 0, "No option payout");
         require(totalBalance() >= _optionAmount, "Insufficient balance");
         
-        currency.safeTransfer(msg.sender, _optionAmount);
+        _transfer(_optionAmount);
         userInfo[msg.sender].optionPayout = 0;
 
         emit WithdrawOption(msg.sender, _optionAmount);
     }
 
     /**
-     * @notice After the fund is locked, distribute locked funds into Compound cUSDC pool and the Qredo wallet
+     * @notice After the fund is locked, distribute locked funds into Lido staking pool and the Qredo wallet
      * to generate passive income
      */
     function distributeFunds(
         uint256 _yieldRate,
-        address _cErc20Pool
+        address _lidoLocator
     ) external onlyManager onlyLocked {
         require(!isDistributed, "Already distributed");
         require(_yieldRate <= 100, "Yield rate should be equal or less than 100");
@@ -593,86 +596,64 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 optionAmount;
         if (optionRate > 0) {
             optionAmount = currentCapacity * optionRate / 100;
-            currency.transfer(qredoWallet, optionAmount);
+            _transfer(optionAmount);
         }
 
-        // Lend into the compound cUSDC pool
+        // Staking into Lido
         uint256 yieldAmount = currentCapacity * _yieldRate / 100;
-        currency.approve(_cErc20Pool, yieldAmount);
-        ICErc20(_cErc20Pool).mint(yieldAmount);
+
+        address lido = ILidoLocator(_lidoLocator).lido();
+
+        ILido(lido).submit{value: yieldAmount}(address(0));
+
         isDistributed = true;
         
-        emit DistributeFunds(qredoWallet, optionRate, _cErc20Pool, _yieldRate);
+        emit DistributeFunds(qredoWallet, optionRate, lido, _yieldRate);
     }
 
     function redeemYield(
-        address _cErc20Pool
+        address _lidoLocator
     ) external onlyManager onlyMature {
         require(isDistributed, "Not distributed");
-        uint256 cTokenAmount = ICErc20(_cErc20Pool).balanceOf(address(this));
-        // Retrieve your asset based on a cToken amount
-        ICErc20(_cErc20Pool).redeem(cTokenAmount);
+
+        address lido = ILidoLocator(_lidoLocator).lido();
+        address withdrawalQueue = ILidoLocator(_lidoLocator).withdrawalQueue();
+
+        uint256 shares = ILido(lido).balanceOf(address(this));
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = shares;
+
+        uint256[] memory requestIds = IWithdrawalQueue(withdrawalQueue).requestWithdrawals(
+            amounts, address(this)
+        );
+
+        // Todo claimWithdrawals
+        uint256 lastIndex = IWithdrawalQueue(withdrawalQueue).getLastCheckpointIndex();
+        uint256[] memory hintIds = IWithdrawalQueue(withdrawalQueue).findCheckpointHints(
+            requestIds, 1, lastIndex
+        );
+
+        IWithdrawalQueue(withdrawalQueue).claimWithdrawals(requestIds, hintIds);
+        
         isDistributed = false;
 
-        emit RedeemYield(_cErc20Pool);
+        emit RedeemYield(withdrawalQueue);
     }
-
-    /**
-     * @notice After the fund is locked, distribute USDC into the Qredo wallet and
-     * the lending pools to generate passive income
-     */
-    /* function distributeWithClear(
-        uint256[] calldata _yieldRates, 
-        address[] calldata _clearpools
-    ) external onlyManager onlyLocked {
-        require(!isDistributed, "Already distributed");
-        require(_yieldRates.length == _clearpools.length, "Should have the same length");
-        uint256 totalYieldRate = 0;
-        for (uint256 i = 0; i < _yieldRates.length; i++) {
-            totalYieldRate += _yieldRates[i];
-        }
-        require(totalYieldRate <= 100, "Total yield rate should be equal or less than 100");
-        
-        uint256 optionRate = 100 - totalYieldRate;
-        // Transfer option amount to the Qredo wallet
-        if (optionRate > 0) {
-            uint256 optionAmount = currentCapacity * optionRate / 100;
-            currency.transfer(qredoWallet, optionAmount);
-        }
-
-        // Lend into the clearpool
-        for (uint256 i = 0; i < _clearpools.length; i++) {
-            if (_yieldRates[i] > 0) {
-                uint256 yieldAmount = currentCapacity * _yieldRates[i] / 100;
-                currency.approve(_clearpools[i], yieldAmount);
-                IPoolMaster(_clearpools[i]).provide(yieldAmount);
-            }
-        }
-        isDistributed = true;
-        emit DistributeWithClear(qredoWallet, optionRate, _clearpools, _yieldRates);
-    } */
-
-    /* function redeemYieldFromClear(
-        address[] calldata _clearpools
-    ) external onlyManager onlyMature {
-        require(isDistributed, "Not distributed");
-        require(_clearpools.length > 0, "No yield source");
-        for (uint256 i = 0; i < _clearpools.length; i++) {
-            uint256 cpTokenBal = IPoolMaster(_clearpools[i]).balanceOf(address(this));
-            IPoolMaster(_clearpools[i]).redeem(cpTokenBal);
-        }
-        isDistributed = false;
-        
-        emit RedeemYieldFromClear(_clearpools);
-    } */
-
 
     /**
      * @dev Transfers option profit from a qredo wallet, called by an owner
      */
     function redeemOptionPayout(uint256 _optionProfit) external onlyMature {
         require(msg.sender == qredoWallet, "Not a qredo wallet");
-        currency.safeTransferFrom(msg.sender, address(this), _optionProfit);
+
+        if (address(currency) == address(0)) {
+            (bool sent, ) = address(this).call{value: _optionProfit}("");
+            require(sent, "Failed to send option profit in Ether");
+        } else {
+            currency.safeTransferFrom(msg.sender, address(this), _optionProfit);
+        }
+        
         optionProfit = _optionProfit;
 
         emit RedeemOptionPayout(msg.sender, _optionProfit);
@@ -704,10 +685,14 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     }
 
     /**
-     * @notice Returns the product's total USDC balance
+     * @notice Returns the product's total ETH or USDC balance
      */
     function totalBalance() public view returns (uint256) {
-        return currency.balanceOf(address(this));
+        if (address(currency) == address(0)) {
+            return address(this).balance;
+        } else {
+            return currency.balanceOf(address(this));
+        }
     }
 
     /**
@@ -721,7 +706,20 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
      * @notice Calculates the currency amount based on token supply
      */
     function _convertTokenToCurrency(uint256 _tokenSupply) internal view returns (uint256) {
-        return _tokenSupply * 1000 * (10 ** _currencyDecimals());
+        if (address(currency) == address(0)) {
+            return _tokenSupply * 1 ether;
+        } else {
+            return _tokenSupply * 1000 * (10 ** _currencyDecimals());
+        }
+    }
+
+    function _transfer(uint256 _amount) internal {
+        if (address(currency) == address(0)) {
+            (bool sent, ) = msg.sender.call{value: _amount}("");
+            require(sent, "Failed to send principal in Ether");
+        } else {
+            currency.safeTransfer(msg.sender, _amount);
+        }
     }
 
     /**
