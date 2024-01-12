@@ -25,4 +25,22 @@ interface IWithdrawalQueue {
         uint256[] calldata _requestIds, 
         uint256[] calldata _hints
     ) external;
+
+    /// @notice length of the checkpoint array. Last possible value for the hint.
+    ///  NB! checkpoints are indexed from 1, so it returns 0 if there is no checkpoints
+    function getLastCheckpointIndex() external view returns (uint256);
+
+    /// @notice Finds the list of hints for the given `_requestIds` searching among the checkpoints with indices
+    ///  in the range  `[_firstIndex, _lastIndex]`.
+    ///  NB! Array of request ids should be sorted
+    ///  NB! `_firstIndex` should be greater than 0, because checkpoint list is 1-based array
+    ///  Usage: findCheckpointHints(_requestIds, 1, getLastCheckpointIndex())
+    /// @param _requestIds ids of the requests sorted in the ascending order to get hints for
+    /// @param _firstIndex left boundary of the search range. Should be greater than 0
+    /// @param _lastIndex right boundary of the search range. Should be less than or equal to getLastCheckpointIndex()
+    /// @return hintIds array of hints used to find required checkpoint for the request
+    function findCheckpointHints(uint256[] calldata _requestIds, uint256 _firstIndex, uint256 _lastIndex)
+        external
+        view
+        returns (uint256[] memory hintIds);
 }
