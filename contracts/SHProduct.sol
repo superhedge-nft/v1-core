@@ -83,12 +83,12 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
     event DistributeFunds(
         address indexed _qredoDeribit,
         uint256 _optionRate,
-        address indexed _cErc20Pool,
+        address indexed _lido,
         uint256 _yieldRate
     );
     
     event RedeemYield(
-        address _cErc20Pool
+        address _lido
     );
 
     /// @notice Event emitted when new issuance cycle is updated
@@ -493,12 +493,11 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
             _amount += userInfo[msg.sender].coupon + userInfo[msg.sender].optionPayout;
         }
 
-        uint256 decimals = _currencyDecimals();
+        uint256 decimals = 18;
         if (address(currency) == address(0)) {
-            decimals = 18;
             require((_amount % 1 ether) == 0, "Amount must be whole-number eth");
-            
         } else {
+            decimals = _currencyDecimals();
             require((_amount % (1000 * 10 ** decimals)) == 0, "Amount must be whole-number thousands");
         }
 
