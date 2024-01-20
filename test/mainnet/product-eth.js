@@ -237,18 +237,20 @@ describe("SHFactory test suite", function () {
             expect(user2Info.coupon).to.equal(couponBalance * 2);
         });
 
-        /* it("Withdraws coupon", async() => {
+        it("Withdraws coupon", async() => {
             await expect(
                 shProduct.connect(user1).withdrawCoupon()
             ).to.be.revertedWith("Insufficient balance");
             
             const user1Info = await shProduct.userInfo(user1.address);
             const user2Info = await shProduct.userInfo(user2.address);
+
             // Pre fund from Qredo wallet
-            await usdc.connect(user1).transfer(
-                shProduct.address, parseUnits("100", 6)
-            );
-            
+            await qredoSigner.sendTransaction({
+                to: shProduct.address,
+                value: parseEther("1")
+            });
+
             await expect(
                 shProduct.connect(user1).withdrawCoupon()
             ).to.emit(shProduct, "WithdrawCoupon").withArgs(user1.address, user1Info.coupon);
@@ -256,7 +258,7 @@ describe("SHFactory test suite", function () {
             await expect(
                 shProduct.connect(user2).withdrawCoupon()
             ).to.emit(shProduct, "WithdrawCoupon").withArgs(user2.address, user2Info.coupon);
-        }); */
+        });
     });
 
     /* describe("After maturity", () => {
