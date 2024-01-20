@@ -231,6 +231,12 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         _;
     }
 
+    // Function to receive Ether. msg.data must be empty
+    receive() external payable {}
+
+    // Fallback function is called when msg.data is not empty
+    fallback() external payable {}
+
     /**
      * @notice Whitelists the relayers and additional callers for the functions that OZ defender will call
      */
@@ -559,8 +565,9 @@ contract SHProduct is ReentrancyGuardUpgradeable, PausableUpgradeable {
         uint256 _couponAmount = userInfo[msg.sender].coupon;
         require(_couponAmount > 0, "No coupon payout");
         require(totalBalance() >= _couponAmount, "Insufficient balance");
-        
+
         _transfer(_couponAmount);
+
         userInfo[msg.sender].coupon = 0;
 
         emit WithdrawCoupon(msg.sender, _couponAmount);
