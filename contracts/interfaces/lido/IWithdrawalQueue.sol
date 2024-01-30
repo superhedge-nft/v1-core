@@ -2,6 +2,16 @@
 pragma solidity ^0.8.9;
 
 interface IWithdrawalQueue {
+
+    struct WithdrawalRequestStatus {
+        uint256 amountOfStETH;
+        uint256 amountOfShares;
+        address owner;
+        uint256 timestamp;
+        bool isFinalized;
+        bool isClaimed;
+    }
+
     /// @notice Request the batch of stETH for withdrawal. Approvals for the passed amounts should be done before.
     /// @param _amounts an array of stETH amount values.
     ///  The standalone withdrawal request will be created for each item in the passed list.
@@ -43,4 +53,11 @@ interface IWithdrawalQueue {
         external
         view
         returns (uint256[] memory hintIds);
+
+    /// @notice Returns status for requests with provided ids
+    /// @param _requestIds array of withdrawal request ids
+    function getWithdrawalStatus(uint256[] calldata _requestIds)
+        external
+        view
+        returns (WithdrawalRequestStatus[] memory statuses);
 }
